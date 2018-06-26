@@ -46,6 +46,8 @@
 #include "hal/hal.h"
 #include <SPI.h>
 
+#define OTAA 1
+
 //---------------------------------------------------------
 // Sensor declarations
 //---------------------------------------------------------
@@ -55,25 +57,25 @@ int count=0;
 
 // LoRaWAN Application identifier (AppEUI)
 // Not used in this example
-static const u1_t APPEUI[8] PROGMEM = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x00, 0xEF, 0xD3 };
+///////static const u1_t APPEUI[8] PROGMEM = { 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x00, 0xEF, 0xD3 };
 
 // LoRaWAN DevEUI, unique device ID (LSBF)
 // Not used in this example
-static const u1_t DEVEUI[8] PROGMEM  = { 0x00, 0xFB, 0xB8, 0x99, 0x33, 0x6C, 0xF7, 0x99 };
+///////static const u1_t DEVEUI[8] PROGMEM  = { 0x00, 0xFB, 0xB8, 0x99, 0x33, 0x6C, 0xF7, 0x99 };
 
 // LoRaWAN NwkSKey, network session key 
 // Use this key for The Things Network
-unsigned char NwkSkey[16] = 		{ 0x22, 0x2B, 0xEE, 0xE6, 0x95, 0xFB, 0x94, 0xB9, 0x82, 0x27, 0x5A, 0x39, 0x37, 0x16, 0x63, 0x3C };
+unsigned char NwkSkey[16] = 		{ 0xEB, 0xD4, 0x3C, 0x3D, 0x5E, 0x32, 0xCD, 0xFF, 0x41, 0x65, 0xBB, 0x60, 0xCC, 0xD8, 0xD8, 0xE2 };
 
 // LoRaWAN AppSKey, application session key
 // Use this key to get your data decrypted by The Things Network
-unsigned char AppSkey[16] =		{ 0x9A, 0x3A, 0xC8, 0x92, 0xA1, 0xC1, 0x05, 0xCA, 0x78, 0xC0, 0xE1, 0xFB, 0x5B, 0x46, 0x18, 0xF8 };
+unsigned char AppSkey[16] =		{ 0xF2, 0xB0, 0xE4, 0xBF, 0x12, 0x8D, 0xAB, 0x8C, 0xD5, 0xB2, 0x58, 0x53, 0x3F, 0x9C, 0xB1, 0x2B };
 
 // LoRaWAN end-device address (DevAddr)
 // See http://thethingsnetwork.org/wiki/AddressSpace
 
 #define msbf4_read(p)   (u4_t)((u4_t)(p)[0]<<24 | (u4_t)(p)[1]<<16 | (p)[2]<<8 | (p)[3])
-unsigned char DevAddr[4] ={ 0x26, 0x01, 0x17, 0x4D };
+unsigned char DevAddr[4] =  { 0x26, 0x01, 0x13, 0x43 };
 
 
 // ----------------------------------------------------------------------------
@@ -82,14 +84,14 @@ unsigned char DevAddr[4] ={ 0x26, 0x01, 0x17, 0x4D };
 
 
 // provide application router ID (8 bytes, LSBF)
-void os_getArtEui (u1_t* buf) {
-    memcpy(buf, APPEUI, 8);
-}
-
-// provide device ID (8 bytes, LSBF)
-void os_getDevEui (u1_t* buf) {
-    memcpy(buf, DEVEUI, 8);
-}
+//void os_getArtEui (u1_t* buf) {
+//    memcpy(buf, APPEUI, 8);
+//}
+//
+//// provide device ID (8 bytes, LSBF)
+//void os_getDevEui (u1_t* buf) {
+//    memcpy(buf, DEVEUI, 8);
+//}
 
 // provide device key (16 bytes)
 void os_getDevKey (u1_t* buf) {
@@ -161,6 +163,7 @@ void do_send(osjob_t* j){
 void setup() {
   Serial.begin(115200);
 
+  // Enable LoRa Module 
   pinMode(8, OUTPUT);
   digitalWrite(8, HIGH);
 
@@ -170,9 +173,9 @@ void setup() {
   LMIC_reset();
   // Set static session parameters. Instead of dynamically establishing a session 
   // by joining the network, precomputed session parameters are be provided.
-  LMIC_setSession (0x1, msbf4_read(DevAddr), (uint8_t*)NwkSkey, (uint8_t*)AppSkey);
+  ////////LMIC_setSession (0x1, msbf4_read(DevAddr), (uint8_t*)NwkSkey, (uint8_t*)AppSkey);
   // Disable data rate adaptation
-  LMIC_setAdrMode(1);
+  LMIC_setAdrMode(0);
   // Disable link check validation
   LMIC_setLinkCheckMode(0);
   // Disable beacon tracking
