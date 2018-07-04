@@ -57,7 +57,6 @@ void setup()
   
   Wire.begin();        // join i2c bus (address optional for master)
   //Wire.endTransmission();
-  Serial.begin(57600);  // start serial for output. Make sure you set your Serial Monitor to the same!
   Serial.begin(57600);  // start serial for output. Make sure you set your Serial Monitor to the same!  
   
   //Put the ADXL345 into +/- 4G range by writing the value 0x01 to the DATA_FORMAT register.
