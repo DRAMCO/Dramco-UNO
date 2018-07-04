@@ -54,29 +54,21 @@ void setup()
 {
   pinMode(8, OUTPUT);
   digitalWrite(8, HIGH);
-  delay(4000);
   
-
   Wire.begin();        // join i2c bus (address optional for master)
   //Wire.endTransmission();
   Serial.begin(57600);  // start serial for output. Make sure you set your Serial Monitor to the same!
-  Serial.print("init");
-  //Wire.endTransmission();
-  Serial.print("bla");
-  
+  Serial.begin(57600);  // start serial for output. Make sure you set your Serial Monitor to the same!  
   
   //Put the ADXL345 into +/- 4G range by writing the value 0x01 to the DATA_FORMAT register.
   writeTo(DATA_FORMAT, 0x01);
-  Serial.print("bla");
   //Put the ADXL345 into Measurement Mode by writing 0x08 to the POWER_CTL register.
-  //writeTo(POWER_CTL, 0x08);
-
-  Serial.print("bla");
+  writeTo(POWER_CTL, 0x08);
 }
 
 void loop()
 {
-  //readAccel(); // read the x/y/z tilt
+  readAccel(); // read the x/y/z tilt
   delay(500); // only read every 0,5 seconds
 }
 
