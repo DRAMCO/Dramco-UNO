@@ -10,41 +10,33 @@
 //Sleep
 #include <DeepSleepScheduler.h>
 
-//Accelero vals
+//Accelerometer parameters
 #define ACC_ID          0x53  //ADXL345 Device ID
 #define ACC_POWER_CTL   0x2D  //Power Control Register
 #define ACC_DATA_FORMAT 0x31
-#define ACC_DATAX0      0x32  //X-Axis Data 0
-#define ACC_DATAX1      0x33; //X-Axis Data 1
-#define ACC_DATAY0      0x34; //Y-Axis Data 0
-#define ACC_DATAY1      0x35; //Y-Axis Data 1
-#define ACC_DATAZ0      0x36; //Z-Axis Data 0
-#define ACC_DATAZ1      0x37; //Z-Axis Data 1
+#define ACC_START_BYTE  0x32  //X-Axis Data 0
+#define ACC_BYTES       0x06  //Number of databytes
 
-byte _buff[6];
+byte acc_buffer[ACC_BYTES];
 
-//Temperature vals
-// Data wire is plugged into pin 2 on the Arduino 
-#define ONE_WIRE_BUS 7 
-/********************************************************************/
-// Setup a oneWire instance to communicate with any OneWire devices  
-// (not just Maxim/Dallas temperature ICs) 
-OneWire oneWire(ONE_WIRE_BUS); 
-/********************************************************************/
-// Pass our oneWire reference to Dallas Temperature. 
-DallasTemperature sensors(&oneWire);
+//Temperature sensor parameters
+#define TEMP_BUS  7     //Onewire pin
+#define TEMP_SENSORS 2  //Number of temperature sensors 
 
-float temperature[2]; 
+OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
+DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
 
-//LoRa vals
-  // LoRaWAN NwkSKey, network session key
-  static const PROGMEM u1_t NWKSKEY[16] = { 0x5C, 0xE3, 0x62, 0x82, 0x6B, 0xC4, 0xE2, 0x6B, 0xA9, 0xE8, 0x5C, 0xA8, 0x4C, 0xA3, 0x66, 0x68 };
-  // LoRaWAN AppSKey, application session key
-  static const u1_t PROGMEM APPSKEY[16] = { 0xFC, 0xC0, 0x35, 0x91, 0x5B, 0x10, 0xE9, 0xB8, 0x81, 0xC9, 0x5A, 0x79, 0xA2, 0xAC, 0x43, 0xB8 };
-  // LoRaWAN end-device address (DevAddr)
-  static const u4_t DEVADDR = 0x26011638 ;
+float temp_buffer[2]; 
 
-  // These callbacks are only used in over-the-air activation, so they are
+//LoRa module parameters
+// LoRaWAN NwkSKey, network session key
+static const PROGMEM u1_t NWKSKEY[16] = { 0x5C, 0xE3, 0x62, 0x82, 0x6B, 0xC4, 0xE2, 0x6B, 0xA9, 0xE8, 0x5C, 0xA8, 0x4C, 0xA3, 0x66, 0x68 };
+// LoRaWAN AppSKey, application session key
+static const u1_t PROGMEM APPSKEY[16] = { 0xFC, 0xC0, 0x35, 0x91, 0x5B, 0x10, 0xE9, 0xB8, 0x81, 0xC9, 0x5A, 0x79, 0xA2, 0xAC, 0x43, 0xB8 };
+// LoRaWAN end-device address (DevAddr)
+static const u4_t DEVADDR = 0x26011638 ;
+
+// These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
 // DISABLE_JOIN is set in config.h, otherwise the linker will complain).
 void os_getArtEui (u1_t* buf) { }
@@ -147,8 +139,9 @@ void do_send(osjob_t* j){
 void setup()
 {
   //Enable Serial Port
-  Serial.begin(115200);  // start serial for output. Make sure you set your Serial Monitor to the same!  
-     scheduler.schedule(measure);
+  Serial.begin(115200); 
+  //Start measurement scheduler
+  scheduler.schedule(measure);
 }
 void measure() {
   //Enable 3V3 LDO
@@ -164,7 +157,7 @@ void measure() {
   writeTo(ACC_POWER_CTL, 0x08);
 
   //Start up temperature sensors
-  sensors.begin(); 
+  temp_sensors.begin(); 
 
   //Start Lora
 
@@ -237,13 +230,13 @@ void measure() {
   
   readAccel(); // read the x/y/z tilt
 
-  sensors.requestTemperatures(); // Send the command to get temperature readings 
-  temperature[0] = sensors.getTempCByIndex(0);
-  temperature[1] = sensors.getTempCByIndex(1);
+  temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
+  temp_buffer[0] = temp_sensors.getTempCByIndex(0);
+  temp_buffer[1] = temp_sensors.getTempCByIndex(1);
   Serial.print("Temp 1: ");
-  Serial.print(temperature[0]);
+  Serial.print(temp_buffer[0]);
   Serial.print(" Temp 2: ");
-  Serial.println(temperature[1]); 
+  Serial.println(temp_buffer[1]); 
   
   delay(5000); // only read every 0,5 seconds
   //Sleep
@@ -256,19 +249,16 @@ void measure() {
 void loop()
 {
   scheduler.execute();
-  //sleepNow();
-  
 }
 //Accelero Functions
-void readAccel() {
-  uint8_t howManyBytesToRead = 6;
-  readFrom(ACC_DATAX0, howManyBytesToRead, _buff); //read the acceleration data from the ADXL345
+void readAccel(){
+  readFrom(ACC_START_BYTE, ACC_BYTES, acc_buffer); //read the acceleration data from the ADXL345
 
   // each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
   // thus we are converting both bytes in to one int
-  int x = (((int)_buff[1]) << 8) | _buff[0];   
-  int y = (((int)_buff[3]) << 8) | _buff[2];
-  int z = (((int)_buff[5]) << 8) | _buff[4];
+  int x = (((int)acc_buffer[1]) << 8) | acc_buffer[0];   
+  int y = (((int)acc_buffer[3]) << 8) | acc_buffer[2];
+  int z = (((int)acc_buffer[5]) << 8) | acc_buffer[4];
   Serial.print("x: ");
   Serial.print( x );
   Serial.print(" y: ");
@@ -277,26 +267,25 @@ void readAccel() {
   Serial.println( z );
 }
 
-void writeTo(byte address, byte val) {
+void writeTo(byte address, byte val){
   Wire.beginTransmission(ACC_ID); // start transmission to device 
-  Wire.write(address);             // send register address
-  Wire.write(val);                 // send value to write
+  Wire.write(address);            // send register address
+  Wire.write(val);                // send value to write
   Wire.endTransmission();         // end transmission
 }
 
-// Reads num bytes starting from address register on device in to _buff array
 void readFrom(byte address, int num, byte _buff[]) {
+  int i = 0;
+  
   Wire.beginTransmission(ACC_ID); // start transmission to device 
-  Wire.write(address);             // sends address to read from
+  Wire.write(address);            // sends address to read from
   Wire.endTransmission();         // end transmission
 
   Wire.beginTransmission(ACC_ID); // start transmission to device
-  Wire.requestFrom(ACC_ID, num);    // request 6 bytes from device
+  Wire.requestFrom(ACC_ID, num);  // request 6 bytes from device
 
-  int i = 0;
-  while(Wire.available())         // device may send less than requested (abnormal)
-  { 
-    _buff[i] = Wire.read();    // receive a byte
+  while(Wire.available()){        // device may send less than requested (abnormal)
+    acc_buffer[i] = Wire.read();  // receive a byte
     i++;
   }
   Wire.endTransmission();         // end transmission
