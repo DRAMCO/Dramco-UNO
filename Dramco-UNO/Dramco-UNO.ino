@@ -7,6 +7,8 @@
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+//Sleep
+#include <DeepSleepScheduler.h>
 
 //Accelero vals
 #define DEVICEID_ACC 0x53 // ADXL345 Device ID
@@ -147,7 +149,9 @@ void setup()
 {
   //Enable Serial Port
   Serial.begin(115200);  // start serial for output. Make sure you set your Serial Monitor to the same!  
-  
+     scheduler.schedule(measure);
+}
+void measure() {
   //Enable 3V3 LDO
   pinMode(8, OUTPUT);
   digitalWrite(8, HIGH);
@@ -228,10 +232,8 @@ void setup()
 
     // Start job
     do_send(&sendjob);
-}
 
-void loop()
-{
+  
   os_runloop_once();
   
   readAccel(); // read the x/y/z tilt
@@ -244,7 +246,19 @@ void loop()
   Serial.print(" Temp 2: ");
   Serial.println(temperature[1]); 
   
-  delay(500); // only read every 0,5 seconds
+  delay(5000); // only read every 0,5 seconds
+  //Sleep
+  digitalWrite(8, LOW);
+  Serial.print("Sleep");
+  Serial.flush();
+  scheduler.scheduleDelayed(measure, 60000);
+}
+
+void loop()
+{
+  scheduler.execute();
+  //sleepNow();
+  
 }
 //Accelero Functions
 void readAccel() {
