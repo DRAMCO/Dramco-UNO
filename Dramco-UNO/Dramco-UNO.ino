@@ -1,6 +1,6 @@
-//Accelero
+//Accelerometer
 #include <Wire.h>
-//Temperature
+//Temperature sensors
 #include <OneWire.h> 
 #include <DallasTemperature.h>
 //LoRa Module
@@ -9,18 +9,17 @@
 #include <SPI.h>
 
 //Accelero vals
-#define DEVICEID_ACC 0x53 // ADXL345 Device ID
+#define ACC_ID          0x53  //ADXL345 Device ID
+#define ACC_POWER_CTL   0x2D  //Power Control Register
+#define ACC_DATA_FORMAT 0x31
+#define ACC_DATAX0      0x32  //X-Axis Data 0
+#define ACC_DATAX1      0x33; //X-Axis Data 1
+#define ACC_DATAY0      0x34; //Y-Axis Data 0
+#define ACC_DATAY1      0x35; //Y-Axis Data 1
+#define ACC_DATAZ0      0x36; //Z-Axis Data 0
+#define ACC_DATAZ1      0x37; //Z-Axis Data 1
 
 byte _buff[6];
-
-char POWER_CTL = 0x2D;  //Power Control Register
-char DATA_FORMAT = 0x31;
-char DATAX0 = 0x32; //X-Axis Data 0
-char DATAX1 = 0x33; //X-Axis Data 1
-char DATAY0 = 0x34; //Y-Axis Data 0
-char DATAY1 = 0x35; //Y-Axis Data 1
-char DATAZ0 = 0x36; //Z-Axis Data 0
-char DATAZ1 = 0x37; //Z-Axis Data 1
 
 //Temperature vals
 // Data wire is plugged into pin 2 on the Arduino 
@@ -156,9 +155,9 @@ void setup()
   Wire.begin();        // join i2c bus (address optional for master)
   
    //Put the ADXL345 into +/- 4G range by writing the value 0x01 to the DATA_FORMAT register.
-  writeTo(DATA_FORMAT, 0x01);
+  writeTo(ACC_DATA_FORMAT, 0x01);
    //Put the ADXL345 into Measurement Mode by writing 0x08 to the POWER_CTL register.
-  writeTo(POWER_CTL, 0x08);
+  writeTo(ACC_POWER_CTL, 0x08);
 
   //Start up temperature sensors
   sensors.begin(); 
@@ -249,7 +248,7 @@ void loop()
 //Accelero Functions
 void readAccel() {
   uint8_t howManyBytesToRead = 6;
-  readFrom( DATAX0, howManyBytesToRead, _buff); //read the acceleration data from the ADXL345
+  readFrom(ACC_DATAX0, howManyBytesToRead, _buff); //read the acceleration data from the ADXL345
 
   // each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
   // thus we are converting both bytes in to one int
@@ -265,7 +264,7 @@ void readAccel() {
 }
 
 void writeTo(byte address, byte val) {
-  Wire.beginTransmission(DEVICEID_ACC); // start transmission to device 
+  Wire.beginTransmission(ACC_ID); // start transmission to device 
   Wire.write(address);             // send register address
   Wire.write(val);                 // send value to write
   Wire.endTransmission();         // end transmission
@@ -273,12 +272,12 @@ void writeTo(byte address, byte val) {
 
 // Reads num bytes starting from address register on device in to _buff array
 void readFrom(byte address, int num, byte _buff[]) {
-  Wire.beginTransmission(DEVICEID_ACC); // start transmission to device 
+  Wire.beginTransmission(ACC_ID); // start transmission to device 
   Wire.write(address);             // sends address to read from
   Wire.endTransmission();         // end transmission
 
-  Wire.beginTransmission(DEVICEID_ACC); // start transmission to device
-  Wire.requestFrom(DEVICEID_ACC, num);    // request 6 bytes from device
+  Wire.beginTransmission(ACC_ID); // start transmission to device
+  Wire.requestFrom(ACC_ID, num);    // request 6 bytes from device
 
   int i = 0;
   while(Wire.available())         // device may send less than requested (abnormal)
