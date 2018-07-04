@@ -28,23 +28,58 @@
  * Do not forget to define the radio type correctly in config.h.
  *
  *******************************************************************************/
-
+//LoRa Moduele
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
+//Temperature sensors
+#include <OneWire.h> 
+#include <DallasTemperature.h>
 
-// LoRaWAN NwkSKey, network session key
-// This is the default Semtech key, which is used by the early prototype TTN
-// network.
-static const PROGMEM u1_t NWKSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
+// Data wire is plugged into pin 2 on the Arduino 
+#define ONE_WIRE_BUS 7 
 
-// LoRaWAN AppSKey, application session key
-// This is the default Semtech key, which is used by the early prototype TTN
-// network.
-static const u1_t PROGMEM APPSKEY[16] = { 0x2B, 0x7E, 0x15, 0x16, 0x28, 0xAE, 0xD2, 0xA6, 0xAB, 0xF7, 0x15, 0x88, 0x09, 0xCF, 0x4F, 0x3C };
+/********************************************************************/
+// Setup a oneWire instance to communicate with any OneWire devices  
+// (not just Maxim/Dallas temperature ICs) 
+OneWire oneWire(ONE_WIRE_BUS); 
+/********************************************************************/
+// Pass our oneWire reference to Dallas Temperature. 
+DallasTemperature sensors(&oneWire);
 
-// LoRaWAN end-device address (DevAddr)
-static const u4_t DEVADDR = 0x03FF0001 ; // <-- Change this address for every node!
+
+#define DEVICE 4
+
+#if DEVICE == 1
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xEB, 0xD4, 0x3C, 0x3D, 0x5E, 0x32, 0xCD, 0xFF, 0x41, 0x65, 0xBB, 0x60, 0xCC, 0xD8, 0xD8, 0xE2 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xF2, 0xB0, 0xE4, 0xBF, 0x12, 0x8D, 0xAB, 0x8C, 0xD5, 0xB2, 0x58, 0x53, 0x3F, 0x9C, 0xB1, 0x2B };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011343 ;
+#elif DEVICE == 2
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x1B, 0xC1, 0xDF, 0xBF, 0xF3, 0x8A, 0x71, 0x50, 0x5C, 0x2D, 0xE4, 0x9A, 0xF0, 0x30, 0xBD, 0x23 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xE5, 0x7F, 0xF1, 0x89, 0x8C, 0x95, 0xEC, 0x42, 0x72, 0x73, 0x0C, 0x54, 0x7A, 0xA0, 0x54, 0x40 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x260119E7 ;
+#elif DEVICE == 3
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x5C, 0xE3, 0x62, 0x82, 0x6B, 0xC4, 0xE2, 0x6B, 0xA9, 0xE8, 0x5C, 0xA8, 0x4C, 0xA3, 0x66, 0x68 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xFC, 0xC0, 0x35, 0x91, 0x5B, 0x10, 0xE9, 0xB8, 0x81, 0xC9, 0x5A, 0x79, 0xA2, 0xAC, 0x43, 0xB8 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011638 ;
+#elif DEVICE == 4
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xEA, 0x9C, 0x58, 0x94, 0xD6, 0x01, 0x68, 0xE2, 0x97, 0x87, 0x51, 0xFE, 0x6C, 0x64, 0x4B, 0xDB };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x59, 0xE9, 0x64, 0x97, 0x1C, 0x4E, 0x23, 0x9C, 0x8B, 0xB9, 0xF5, 0xFF, 0xB6, 0x57, 0x74, 0xCE };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011A6D ;
+#endif
+ 
 
 // These callbacks are only used in over-the-air activation, so they are
 // left empty here (we cannot leave them out completely unless
@@ -53,12 +88,12 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-static uint8_t mydata[] = "Hello, world!";
+static uint8_t mydata[] = "OK";
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
 // cycle limitations).
-const unsigned TX_INTERVAL = 60;
+const unsigned TX_INTERVAL = 20;
 
 // Pin mapping
 const lmic_pinmap lmic_pins = {
@@ -110,6 +145,7 @@ void onEvent (ev_t ev) {
             }
             // Schedule next transmission
             os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+            Serial.println(os_getTime()+sec2osticks(TX_INTERVAL));
             break;
         case EV_LOST_TSYNC:
             Serial.println(F("EV_LOST_TSYNC"));
@@ -149,12 +185,12 @@ void setup() {
     Serial.begin(115200);
     Serial.println(F("Starting"));
 
-    #ifdef VCC_ENABLE
-    // For Pinoccio Scout boards
-    pinMode(VCC_ENABLE, OUTPUT);
-    digitalWrite(VCC_ENABLE, HIGH);
+    pinMode(8, OUTPUT);
+    digitalWrite(8, HIGH);
+    
+    sensors.begin(); 
+    
     delay(1000);
-    #endif
 
     // LMIC init
     os_init();
@@ -215,7 +251,7 @@ void setup() {
     LMIC.dn2Dr = DR_SF9;
 
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF7,14);
+    LMIC_setDrTxpow(DR_SF11,14);
 
     // Start job
     do_send(&sendjob);
@@ -223,4 +259,10 @@ void setup() {
 
 void loop() {
     os_runloop_once();
+     Serial.print(" Requesting temperatures..."); 
+     sensors.requestTemperatures(); // Send the command to get temperature readings 
+     Serial.println("DONE"); 
+    /********************************************************************/
+     Serial.print("Temperature is: "); 
+     Serial.print(sensors.getTempCByIndex(0)); // Why "byIndex"?  
 }

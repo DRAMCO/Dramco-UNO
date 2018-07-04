@@ -1,3 +1,5 @@
+#include <lmic.h>
+
 /*******************************************************************************
  * Copytight (c) 2016 Maarten Westenberg based on work of
  * Thomas Telkamp and Matthijs Kooijman porting the LMIC stack to Arduino IDE
@@ -75,7 +77,7 @@ unsigned char AppSkey[16] =		{ 0xF2, 0xB0, 0xE4, 0xBF, 0x12, 0x8D, 0xAB, 0x8C, 0
 // See http://thethingsnetwork.org/wiki/AddressSpace
 
 #define msbf4_read(p)   (u4_t)((u4_t)(p)[0]<<24 | (u4_t)(p)[1]<<16 | (p)[2]<<8 | (p)[3])
-unsigned char DevAddr[4] =  { 0x26, 0x01, 0x13, 0x43 };
+unsigned char DevAddr[4] ={ 0x26, 0x01, 0x13, 0x43 };
 
 
 // ----------------------------------------------------------------------------
@@ -84,14 +86,14 @@ unsigned char DevAddr[4] =  { 0x26, 0x01, 0x13, 0x43 };
 
 
 // provide application router ID (8 bytes, LSBF)
-//void os_getArtEui (u1_t* buf) {
-//    memcpy(buf, APPEUI, 8);
-//}
-//
-//// provide device ID (8 bytes, LSBF)
-//void os_getDevEui (u1_t* buf) {
-//    memcpy(buf, DEVEUI, 8);
-//}
+void os_getArtEui (u1_t* buf) {
+    memcpy(buf, APPEUI, 8);
+}
+
+// provide device ID (8 bytes, LSBF)
+void os_getDevEui (u1_t* buf) {
+    memcpy(buf, DEVEUI, 8);
+}
 
 // provide device key (16 bytes)
 void os_getDevKey (u1_t* buf) {
@@ -173,7 +175,7 @@ void setup() {
   LMIC_reset();
   // Set static session parameters. Instead of dynamically establishing a session 
   // by joining the network, precomputed session parameters are be provided.
-  ////////LMIC_setSession (0x1, msbf4_read(DevAddr), (uint8_t*)NwkSkey, (uint8_t*)AppSkey);
+  LMIC_setSession (0x1, msbf4_read(DevAddr), (uint8_t*)NwkSkey, (uint8_t*)AppSkey);
   // Disable data rate adaptation
   LMIC_setAdrMode(0);
   // Disable link check validation
