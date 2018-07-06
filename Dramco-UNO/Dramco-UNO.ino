@@ -22,18 +22,18 @@ byte acc_buffer[ACC_BYTES];
 
 //Temperature sensor parameters
 #define TEMP_BUS  7     //Onewire pin
-#define TEMP_SENSORS 2  //Number of temperature sensors 
+#define TEMP_SENSORS 3  //Number of temperature sensors 
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
 
-float temp_buffer[2]; 
+float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
 #define DEVICE 1
 
 #define POWER_ENABLE_PIN 8
-#define MEASURE_INTERVAL 15000   //Measurement interval time in ms
+#define MEASURE_INTERVAL 5000   //Measurement interval time in ms
 
 #if DEVICE == 1
   // LoRaWAN NwkSKey, network session key
@@ -63,6 +63,13 @@ float temp_buffer[2];
   static const u1_t PROGMEM APPSKEY[16] = { 0x59, 0xE9, 0x64, 0x97, 0x1C, 0x4E, 0x23, 0x9C, 0x8B, 0xB9, 0xF5, 0xFF, 0xB6, 0x57, 0x74, 0xCE };
   // LoRaWAN end-device address (DevAddr)
   static const u4_t DEVADDR = 0x26011A6D ;
+#elif DEVICE == 5  //Boom Bart
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xF5, 0xA3, 0x98, 0xCA, 0x0B, 0xC5, 0x56, 0x51, 0x87, 0xC0, 0xE2, 0x4E, 0xC0, 0xEB, 0x4C, 0xCD };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x6F, 0x28, 0x82, 0x08, 0x0E, 0x1D, 0x4D, 0xF8, 0x0A, 0x5B, 0xDE, 0x3B, 0xCF, 0xA6, 0x38, 0x2A };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x260110C5 ;
 #endif
  
 
@@ -75,7 +82,7 @@ void os_getDevKey (u1_t* buf) { }
 
 #define LORA_TEMP 0x67
 #define LORA_ACC  0x71
-static uint8_t lora_stream[16];
+static uint8_t lora_stream[8 + TEMP_SENSORS * 4];
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
@@ -103,10 +110,11 @@ void setup()
   scheduler.schedule(measure);
 }
 void measure() {
+  uint8_t i;
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
 
-  //Enable Accelero
+  //Start up Accelerometer
   Wire.begin();        // join i2c bus (address optional for master)
   
    //Put the ADXL345 into +/- 2G range by writing the value 0x01 to the DATA_FORMAT register.
@@ -116,28 +124,27 @@ void measure() {
 
   delay(200);
 
-  //Start up temperature sensors
+  //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
+  Serial.println(temp_sensors.getDeviceCount());
   temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
-  temp_buffer[0] = temp_sensors.getTempCByIndex(0);
-  temp_buffer[1] = temp_sensors.getTempCByIndex(1);
+  for(i = 0; i < TEMP_SENSORS; i++){
+    temp_buffer[i] = temp_sensors.getTempCByIndex(i);
 
-  lora_stream[0] = 0;
-  lora_stream[1] = LORA_TEMP;
-  lora_stream[2] = (uint8_t)((int16_t)(temp_buffer[0]*10) >> 8);
-  lora_stream[3] = (uint8_t)((int16_t)(temp_buffer[0]*10) & 0xFF);
-
-  lora_stream[4] = 1;
-  lora_stream[5] = LORA_TEMP;
-  lora_stream[6] = (uint8_t)((int16_t)(temp_buffer[1]*10) >> 8);
-  lora_stream[7] = (uint8_t)((int16_t)(temp_buffer[1]*10) & 0xFF);
+    lora_stream[0 + 4*i] = i;
+    lora_stream[1 + 4*i] = LORA_TEMP;
+    lora_stream[2 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) >> 8);
+    lora_stream[3 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) & 0xFF);
   
-  Serial.print("Temp 1: ");
-  Serial.print(temp_buffer[0]);
-  Serial.print(" Temp 2: ");
-  Serial.println(temp_buffer[1]); 
+    Serial.print("Temp ");
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.print(temp_buffer[i]);  
+  }
+  Serial.println();
   
+  //Read accellerometer data
   readFrom(ACC_START_BYTE, ACC_BYTES, acc_buffer); //read the acceleration data from the ADXL345
     // each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
   // thus we are converting both bytes in to one int
@@ -145,14 +152,14 @@ void measure() {
   int acc_y = (int)(((((int)acc_buffer[3]) << 8) | acc_buffer[2]) * 3.76390);
   int acc_z = (int)(((((int)acc_buffer[5]) << 8) | acc_buffer[4]) * 3.76390);
 
-  lora_stream[8] = 3;
-  lora_stream[9] = LORA_ACC;
-  lora_stream[10] = acc_x >> 8;
-  lora_stream[11] = acc_x & 0xFF;
-  lora_stream[12] = acc_y >> 8;
-  lora_stream[13] = acc_y & 0xFF;
-  lora_stream[14] = acc_z >> 8;
-  lora_stream[15] = acc_z & 0xFF;
+  lora_stream[4*TEMP_SENSORS + 0] = 3;
+  lora_stream[4*TEMP_SENSORS + 1] = LORA_ACC;
+  lora_stream[4*TEMP_SENSORS + 2] = acc_x >> 8;
+  lora_stream[4*TEMP_SENSORS + 3] = acc_x & 0xFF;
+  lora_stream[4*TEMP_SENSORS + 4] = acc_y >> 8;
+  lora_stream[4*TEMP_SENSORS + 5] = acc_y & 0xFF;
+  lora_stream[4*TEMP_SENSORS + 6] = acc_z >> 8;
+  lora_stream[4*TEMP_SENSORS + 7] = acc_z & 0xFF;
 
   Serial.print("x: ");
   Serial.print(acc_x);
