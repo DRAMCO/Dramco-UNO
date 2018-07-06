@@ -30,10 +30,10 @@ DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor
 float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
-#define DEVICE 1
+#define DEVICE 5
 
 #define POWER_ENABLE_PIN 8
-#define MEASURE_INTERVAL 5000   //Measurement interval time in ms
+#define MEASURE_INTERVAL 900000   //Measurement interval time in ms  each quarter
 
 #if DEVICE == 1
   // LoRaWAN NwkSKey, network session key
@@ -121,8 +121,6 @@ void measure() {
   writeTo(ACC_DATA_FORMAT, 0x00);
    //Put the ADXL345 into Measurement Mode by writing 0x08 to the POWER_CTL register.
   writeTo(ACC_POWER_CTL, 0x08);
-
-  delay(200);
 
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
@@ -239,12 +237,12 @@ void measure() {
 
 
 
-  delay(5000); // only read every 0,5 seconds
+  delay(1000); // only read every 0,5 seconds
   
   //Sleep
   digitalWrite(POWER_ENABLE_PIN, LOW);
   Serial.print("Sleep");
-  Serial.flush();
+  //Serial.flush();
   scheduler.scheduleDelayed(measure, MEASURE_INTERVAL);
 }
 
