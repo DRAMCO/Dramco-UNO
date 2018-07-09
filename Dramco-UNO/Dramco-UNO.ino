@@ -30,10 +30,16 @@ DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor
 float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
-#define DEVICE 5
+#define DEVICE 4
 
 #define POWER_ENABLE_PIN 8
-#define MEASURE_INTERVAL 900000   //Measurement interval time in ms  each quarter
+#define MEASURE_INTERVAL 20000   //Measurement interval time in ms each quarter
+
+#define LORA_LPP_TEMP       0x67
+#define LORA_LPP_ACC        0x71
+#define LORA_LPP_ANALOG_OUT 0x03
+
+#define LORA_PACKET_SIZE (8 + TEMP_SENSORS * 4 + 4)
 
 #if DEVICE == 1
   // LoRaWAN NwkSKey, network session key
@@ -80,9 +86,9 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-#define LORA_TEMP 0x67
-#define LORA_ACC  0x71
-static uint8_t lora_stream[8 + TEMP_SENSORS * 4];
+
+
+static uint8_t lora_stream[LORA_PACKET_SIZE];
 static osjob_t sendjob;
 
 // Schedule TX every this many seconds (might become longer due to duty
@@ -113,7 +119,7 @@ void measure() {
   uint8_t i;
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
-
+ 
   //Start up Accelerometer
   Wire.begin();        // join i2c bus (address optional for master)
   
@@ -125,13 +131,13 @@ void measure() {
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
   Serial.println(temp_sensors.getDeviceCount());
-  temp_sensors.setResolution(12); 
+  temp_sensors.setResolution(10); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
   for(i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempCByIndex(i);
 
     lora_stream[0 + 4*i] = i;
-    lora_stream[1 + 4*i] = LORA_TEMP;
+    lora_stream[1 + 4*i] = LORA_LPP_TEMP;
     lora_stream[2 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) >> 8);
     lora_stream[3 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) & 0xFF);
   
@@ -142,7 +148,7 @@ void measure() {
   }
   Serial.println();
   
-  //Read accellerometer data
+  //Read accellerometer data (Doesn't work without Temp sensor)
   readFrom(ACC_START_BYTE, ACC_BYTES, acc_buffer); //read the acceleration data from the ADXL345
     // each axis reading comes in 10 bit resolution, ie 2 bytes.  Least Significat Byte first!!
   // thus we are converting both bytes in to one int
@@ -151,7 +157,7 @@ void measure() {
   int acc_z = (int)(((((int)acc_buffer[5]) << 8) | acc_buffer[4]) * 3.76390);
 
   lora_stream[4*TEMP_SENSORS + 0] = 3;
-  lora_stream[4*TEMP_SENSORS + 1] = LORA_ACC;
+  lora_stream[4*TEMP_SENSORS + 1] = LORA_LPP_ACC;
   lora_stream[4*TEMP_SENSORS + 2] = acc_x >> 8;
   lora_stream[4*TEMP_SENSORS + 3] = acc_x & 0xFF;
   lora_stream[4*TEMP_SENSORS + 4] = acc_y >> 8;
@@ -159,12 +165,22 @@ void measure() {
   lora_stream[4*TEMP_SENSORS + 6] = acc_z >> 8;
   lora_stream[4*TEMP_SENSORS + 7] = acc_z & 0xFF;
 
-  Serial.print("x: ");
+  Serial.print(F("x: "));
   Serial.print(acc_x);
-  Serial.print(" y: ");
+  Serial.print(F(" y: "));
   Serial.print(acc_y);
-  Serial.print(" z: ");
+  Serial.print(F(" z: "));
   Serial.println(acc_z);
+
+  //Read Voltage
+  long batteryVoltage = readVcc();
+  Serial.print(F("Vbatt: "));
+  Serial.println(batteryVoltage, DEC); 
+
+  lora_stream[4*TEMP_SENSORS + 8] = i;
+  lora_stream[4*TEMP_SENSORS + 9] = LORA_LPP_ANALOG_OUT;
+  lora_stream[4*TEMP_SENSORS + 10] = (uint8_t)((int16_t)(batteryVoltage/10) >> 8);
+  lora_stream[4*TEMP_SENSORS + 11] = (uint8_t)((int16_t)(batteryVoltage/10) & 0xFF);
   
   //Start Lora
 
@@ -237,7 +253,7 @@ void measure() {
 
 
 
-  delay(1000); // only read every 0,5 seconds
+  delay(2000); // only read every 0,5 seconds
   
   //Sleep
   digitalWrite(POWER_ENABLE_PIN, LOW);
@@ -251,39 +267,11 @@ void loop()
   scheduler.execute();
 }
 
-
 //LoRa Module Functions
 void onEvent (ev_t ev) {
     Serial.print(os_getTime());
     Serial.print(": ");
     switch(ev) {
-        case EV_SCAN_TIMEOUT:
-            Serial.println(F("EV_SCAN_TIMEOUT"));
-            break;
-        case EV_BEACON_FOUND:
-            Serial.println(F("EV_BEACON_FOUND"));
-            break;
-        case EV_BEACON_MISSED:
-            Serial.println(F("EV_BEACON_MISSED"));
-            break;
-        case EV_BEACON_TRACKED:
-            Serial.println(F("EV_BEACON_TRACKED"));
-            break;
-        case EV_JOINING:
-            Serial.println(F("EV_JOINING"));
-            break;
-        case EV_JOINED:
-            Serial.println(F("EV_JOINED"));
-            break;
-        case EV_RFU1:
-            Serial.println(F("EV_RFU1"));
-            break;
-        case EV_JOIN_FAILED:
-            Serial.println(F("EV_JOIN_FAILED"));
-            break;
-        case EV_REJOIN_FAILED:
-            Serial.println(F("EV_REJOIN_FAILED"));
-            break;
         case EV_TXCOMPLETE:
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
@@ -297,24 +285,8 @@ void onEvent (ev_t ev) {
             os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             Serial.println(os_getTime()+sec2osticks(TX_INTERVAL));
             break;
-        case EV_LOST_TSYNC:
-            Serial.println(F("EV_LOST_TSYNC"));
-            break;
-        case EV_RESET:
-            Serial.println(F("EV_RESET"));
-            break;
-        case EV_RXCOMPLETE:
-            // data received in ping slot
-            Serial.println(F("EV_RXCOMPLETE"));
-            break;
-        case EV_LINK_DEAD:
-            Serial.println(F("EV_LINK_DEAD"));
-            break;
-        case EV_LINK_ALIVE:
-            Serial.println(F("EV_LINK_ALIVE"));
-            break;
-         default:
-            Serial.println(F("Unknown event"));
+        default:
+            Serial.println(F("LoRa someting happened"));
             break;
     }
 }
@@ -354,3 +326,15 @@ void readFrom(byte address, int num, byte _buff[]) {
   }
   Wire.endTransmission();         // end transmission
 }
+long readVcc(){
+  long result; // Read 1.1V reference against AVcc 
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1); 
+  delay(2); // Wait for Vref to settle 
+  ADCSRA |= _BV(ADSC); // Convert 
+  while (bit_is_set(ADCSRA,ADSC));
+  result = ADCL; 
+  result |= ADCH<<8; 
+  result = 1126400L / result; // Back-calculate AVcc in mV
+  return result;
+}
+
