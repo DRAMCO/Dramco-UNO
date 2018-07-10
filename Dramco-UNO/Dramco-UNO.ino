@@ -26,6 +26,7 @@ byte acc_buffer[ACC_BYTES];
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
+DeviceAddress tempSensors[TEMP_SENSORS];
 
 float temp_buffer[TEMP_SENSORS]; 
 
@@ -139,6 +140,12 @@ void measure() {
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
   Serial.println(temp_sensors.getDeviceCount());
+  for(i = 0; i < TEMP_SENSORS; i++){
+    if (!temp_sensors.getAddress(tempSensors[i], i)){
+      Serial.print("Unable to find address for Device ");
+      Serial.println(i);
+    }
+  }
   temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
   for(i = 0; i < TEMP_SENSORS; i++){
