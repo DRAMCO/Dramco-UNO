@@ -30,10 +30,11 @@ DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor
 float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
-#define DEVICE 4
+#define DEVICE 6
 
 #define POWER_ENABLE_PIN 8
-#define MEASURE_INTERVAL 20000   //Measurement interval time in ms each quarter
+//#define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
+#define MEASURE_INTERVAL 5*60000   //Measurement interval time in ms each quarter
 
 #define LORA_LPP_TEMP       0x67
 #define LORA_LPP_ACC        0x71
@@ -76,6 +77,13 @@ float temp_buffer[TEMP_SENSORS];
   static const u1_t PROGMEM APPSKEY[16] = { 0x6F, 0x28, 0x82, 0x08, 0x0E, 0x1D, 0x4D, 0xF8, 0x0A, 0x5B, 0xDE, 0x3B, 0xCF, 0xA6, 0x38, 0x2A };
   // LoRaWAN end-device address (DevAddr)
   static const u4_t DEVADDR = 0x260110C5 ;
+#elif DEVICE == 6  //Dracmo Test
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x9E, 0x88, 0x99, 0x5E, 0x90, 0xC5, 0xB8, 0xAD, 0x96, 0xA8, 0xC1, 0x1D, 0x38, 0x56, 0x42, 0xD0 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x43, 0xEF, 0x97, 0xCE, 0x06, 0xEE, 0xD8, 0x85, 0x4D, 0x16, 0x20, 0x87, 0xCB, 0xF0, 0x10, 0x22 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011107 ;
 #endif
  
 
@@ -131,7 +139,7 @@ void measure() {
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
   Serial.println(temp_sensors.getDeviceCount());
-  temp_sensors.setResolution(10); 
+  temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
   for(i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempCByIndex(i);
@@ -253,7 +261,7 @@ void measure() {
 
 
 
-  delay(2000); // only read every 0,5 seconds
+  delay(1100); // only read every 0,5 seconds
   
   //Sleep
   digitalWrite(POWER_ENABLE_PIN, LOW);
