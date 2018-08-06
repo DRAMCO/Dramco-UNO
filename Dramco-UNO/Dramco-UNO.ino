@@ -9,6 +9,8 @@
 #include <SPI.h>
 //Sleep
 #include <DeepSleepScheduler.h>
+//EEPROM
+#include <EEPROM.h>
 
 //Accelerometer parameters
 #define ACC_ID          0x53  //ADXL345 Device ID
@@ -22,7 +24,7 @@ byte acc_buffer[ACC_BYTES];
 
 //Temperature sensor parameters
 #define TEMP_BUS  7     //Onewire pin
-#define TEMP_SENSORS 3  //Number of temperature sensors 
+#define TEMP_SENSORS 2  //Number of temperature sensors 
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
@@ -31,11 +33,11 @@ DeviceAddress tempSensors[TEMP_SENSORS];
 float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
-#define DEVICE 6
+#define DEVICE 1
 
 #define POWER_ENABLE_PIN 8
 //#define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
-#define MEASURE_INTERVAL 5*60000   //Measurement interval time in ms each quarter
+#define MEASURE_INTERVAL 20000   //Measurement interval time in ms each quarter
 
 #define LORA_LPP_TEMP       0x67
 #define LORA_LPP_ACC        0x71
@@ -115,14 +117,75 @@ const lmic_pinmap lmic_pins = {
 
 void setup()
 {
+  uint8_t detectedTempSensors;
+  int i;
   //Enable Serial Port
   Serial.begin(115200); 
   
   //Enable Pin 3V3 LDO
   pinMode(POWER_ENABLE_PIN, OUTPUT);
+
+  //Start up temperature sensors
+  temp_sensors.begin(); 
+  detectedTempSensors = temp_sensors.getDeviceCount(); 
+  for(i = 0; i < TEMP_SENSORS; i++){
+    readAddressFromEEPROM(tempSensors[i],i);  
+  }
+  Serial.println(detectedTempSensors);
+  switch(detectedTempSensors){
+    case 0: 
+      Serial.println("No temperature sensors found");
+     break;
+    case 1:
+      Serial.println("1 temperature sensors found -> outdoor");
+      //saveAddressToEEPROM(temp_sensors.getAddress(tempSensors[0], 0));
+     break;
+    case 2:
+      Serial.println("2 temperature sensors found -> outdoor + tree");
+     break;
+    case 3:
+      Serial.println("3 temperature sensors found -> outdoor + tree + aux");
+     break;
+    default:
+      Serial.println("To many temperature sensors");
+     break;
+  }
+  for(i = 0; i < TEMP_SENSORS; i++){
+    if (!temp_sensors.getAddress(tempSensors[i], i)){
+      Serial.print("Unable to find address for Device ");
+      Serial.println(i);
+    }
+    printAddress(tempSensors[i]);
+  }
+  temp_sensors.setResolution(12); 
   
   //Start measurement scheduler
-  scheduler.schedule(measure);
+  scheduler.schedule(measure);  
+}
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    // zero pad the address if necessary
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
+  Serial.println();
+}
+void saveAddressToEEPROM(DeviceAddress deviceAddress, uint8_t number)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    EEPROM.write(i+8*number, deviceAddress[i]); 
+  }
+}
+void readAddressFromEEPROM(DeviceAddress *deviceAddress, uint8_t number)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    deviceAddress[i] = EEPROM.read(i+8*number); 
+  }
 }
 void measure() {
   uint8_t i;
@@ -272,7 +335,9 @@ void measure() {
   
   //Sleep
   digitalWrite(POWER_ENABLE_PIN, LOW);
-  Serial.print("Sleep");
+  //Serial.print("Sleep");
+  pinMode(1, OUTPUT);
+  digitalWrite(1, LOW);
   //Serial.flush();
   scheduler.scheduleDelayed(measure, MEASURE_INTERVAL);
 }
