@@ -275,6 +275,7 @@ void readAddressFromEEPROM(uint8_t *deviceAddress, uint8_t number)
   }
 }
 void measure() {
+  uint8_t detectedTempSensors;
   uint8_t i;
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
@@ -289,7 +290,8 @@ void measure() {
 
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
-  Serial.println(temp_sensors.getDeviceCount());
+  detectedTempSensors = temp_sensors.getDeviceCount(); 
+  Serial.print(detectedTempSensors);
   Serial.println(F(" temperature sensor(s) detected"));
   for(i = 0; i < TEMP_SENSORS; i++){
     if (!temp_sensors.getAddress(savedTempSensors[i], i)){
@@ -299,7 +301,7 @@ void measure() {
   }
   temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
-  for(i = 0; i < TEMP_SENSORS; i++){
+  for(i = 0; i < detectedTempSensors; i++){
     temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
 
     lora_stream[0 + 4*i] = i;
