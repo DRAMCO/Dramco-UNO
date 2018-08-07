@@ -9,7 +9,7 @@
 #include <SPI.h>
 //Sleep
 #include <DeepSleepScheduler.h>
-//EEPROM
+//EEPROM to save temperature sensor addresses
 #include <EEPROM.h>
 
 //Accelerometer parameters
@@ -24,11 +24,13 @@ byte acc_buffer[ACC_BYTES];
 
 //Temperature sensor parameters
 #define TEMP_BUS  7     //Onewire pin
-#define TEMP_SENSORS 2  //Number of temperature sensors 
+#define TEMP_SENSORS 3  //Number of temperature sensors 
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
 DeviceAddress tempSensors[TEMP_SENSORS];
+DeviceAddress savedTempSensors[TEMP_SENSORS];
+DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 float temp_buffer[TEMP_SENSORS]; 
 
@@ -97,8 +99,6 @@ void os_getArtEui (u1_t* buf) { }
 void os_getDevEui (u1_t* buf) { }
 void os_getDevKey (u1_t* buf) { }
 
-
-
 static uint8_t lora_stream[LORA_PACKET_SIZE];
 static osjob_t sendjob;
 
@@ -113,50 +113,123 @@ const lmic_pinmap lmic_pins = {
     .rst = 5,
     .dio = {2, 3, 4},
 };
-
+// function to compare device addresses
+uint8_t bulkCompareAddresses(DeviceAddress deviceAddress[TEMP_SENSORS], DeviceAddress deviceAddressComp)
+{  
+  uint8_t result = 0;
+  for (uint8_t i = 0; i < TEMP_SENSORS; i++){
+    
+    if (compareAddresses(deviceAddress[i], deviceAddressComp)){
+      result |= 1 << i;
+    }
+  }
+  return result;
+}
+uint8_t findMissingSensor(uint8_t sensors, uint8_t numberOfsensors)
+{  
+  uint8_t result = 0;
+  for (uint8_t i = 0; i < numberOfsensors; i++){
+    if((sensors & 1<<i) == 0){
+      return i;
+    }
+  }
+  return 255;
+}
 
 void setup()
 {
   uint8_t detectedTempSensors;
+
+  uint8_t outdoorPos;
+  uint8_t treePos;
+  uint8_t temp;
   int i;
+  
   //Enable Serial Port
   Serial.begin(115200); 
   
   //Enable Pin 3V3 LDO
   pinMode(POWER_ENABLE_PIN, OUTPUT);
 
+  Serial.println(F("Dramco-UNO"));
+
   //Start up temperature sensors
+  Serial.println(F("Known temperature sensors"));
+  for(i = 0; i < TEMP_SENSORS; i++){
+    readAddressFromEEPROM(savedTempSensors[i],i);
+    printAddress(savedTempSensors[i]);  
+  }
   temp_sensors.begin(); 
   detectedTempSensors = temp_sensors.getDeviceCount(); 
-  for(i = 0; i < TEMP_SENSORS; i++){
-    readAddressFromEEPROM(tempSensors[i],i);  
+  Serial.print(detectedTempSensors);
+  Serial.println(F(" temperature sensor(s) detected"));
+  for(i = 0; i < detectedTempSensors; i++){
+    temp_sensors.getAddress(tempSensors[i], i); 
   }
-  Serial.println(detectedTempSensors);
+ 
   switch(detectedTempSensors){
     case 0: 
-      Serial.println("No temperature sensors found");
-     break;
+      Serial.println(F("Known temperature sensors cleared"));
+      
+      for(i = 0; i < TEMP_SENSORS; i++){
+        saveAddressToEEPROM(clearValue, i);
+      }
+      break;
     case 1:
-      Serial.println("1 temperature sensors found -> outdoor");
-      //saveAddressToEEPROM(temp_sensors.getAddress(tempSensors[0], 0));
-     break;
+      if (compareAddresses(savedTempSensors[0], clearValue)){
+        Serial.println(F("Outdoor sensor added to list"));
+        saveAddressToEEPROM(tempSensors[0], 0);
+      }
+      else if (compareAddresses(savedTempSensors[0], tempSensors[0])){
+        Serial.println(F("Sensor found: Outdoor"));
+      }
+      else{
+        Serial.println(F("Outdoor sensor mismatch -> disconnect sensors and start over"));
+      }
+      break;
     case 2:
-      Serial.println("2 temperature sensors found -> outdoor + tree");
-     break;
+      outdoorPos = bulkCompareAddresses(tempSensors, savedTempSensors[0]);
+      if(outdoorPos > 0) {
+        Serial.println(F("Sensor found: Outdoor"));
+        if (compareAddresses(savedTempSensors[1], clearValue)){
+          Serial.println(F("Tree sensor added to list"));
+          saveAddressToEEPROM(tempSensors[findMissingSensor(outdoorPos, 2)], 1);
+        }
+        else if (compareAddresses(tempSensors[findMissingSensor(outdoorPos, 2)], savedTempSensors[1])){
+          Serial.println(F("Sensor found: Tree"));
+        }
+        else{
+          Serial.println(F("Tree sensor mismatch  -> disconnect sensors and start over"));
+        }
+      }else{
+        Serial.println(F("Outdoor sensor not found  -> disconnect sensors and start over"));
+      }
+      break;  
     case 3:
-      Serial.println("3 temperature sensors found -> outdoor + tree + aux");
-     break;
+      outdoorPos = bulkCompareAddresses(tempSensors, savedTempSensors[0]);
+      treePos = bulkCompareAddresses(tempSensors, savedTempSensors[1]);
+      if(outdoorPos > 0 && treePos > 0) {
+        Serial.println(F("Sensor found: Outdoor"));
+        Serial.println(F("Sensor found: Tree"));
+        if (compareAddresses(savedTempSensors[2], clearValue)){
+          Serial.println(F("Aux sensor added to list"));
+          saveAddressToEEPROM(tempSensors[findMissingSensor(outdoorPos | treePos, 3)], 2);
+        }
+        else if (compareAddresses(tempSensors[findMissingSensor(outdoorPos | treePos, 3)], savedTempSensors[2])){
+          Serial.println(F("Sensor found: Aux"));
+        }
+        else{
+          Serial.println(F("Aux sensor mismatch  -> disconnect sensors and start over"));
+        }
+      }else{
+        Serial.println(F("Outdoor or tree sensor not found  -> disconnect sensors and start over"));
+      }
+      break;
     default:
       Serial.println("To many temperature sensors");
-     break;
+      break;
   }
-  for(i = 0; i < TEMP_SENSORS; i++){
-    if (!temp_sensors.getAddress(tempSensors[i], i)){
-      Serial.print("Unable to find address for Device ");
-      Serial.println(i);
-    }
-    printAddress(tempSensors[i]);
-  }
+  
   temp_sensors.setResolution(12); 
   
   //Start measurement scheduler
@@ -173,6 +246,18 @@ void printAddress(DeviceAddress deviceAddress)
   }
   Serial.println();
 }
+
+// function to compare device addresses
+bool compareAddresses(DeviceAddress deviceAddress1, DeviceAddress deviceAddress2)
+{  
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress1[i] != deviceAddress2[i]){
+      return false;
+    }
+  }
+  return true;
+}
 void saveAddressToEEPROM(DeviceAddress deviceAddress, uint8_t number)
 {
   for (uint8_t i = 0; i < 8; i++)
@@ -180,11 +265,13 @@ void saveAddressToEEPROM(DeviceAddress deviceAddress, uint8_t number)
     EEPROM.write(i+8*number, deviceAddress[i]); 
   }
 }
-void readAddressFromEEPROM(DeviceAddress *deviceAddress, uint8_t number)
+void readAddressFromEEPROM(uint8_t *deviceAddress, uint8_t number)
 {
+  uint8_t val;
   for (uint8_t i = 0; i < 8; i++)
   {
-    deviceAddress[i] = EEPROM.read(i+8*number); 
+    val = EEPROM.read(i+8*number);
+    deviceAddress[i] = val; 
   }
 }
 void measure() {
@@ -203,8 +290,9 @@ void measure() {
   //Start up temperature sensors and read number of sensors
   temp_sensors.begin(); 
   Serial.println(temp_sensors.getDeviceCount());
+  Serial.println(F(" temperature sensor(s) detected"));
   for(i = 0; i < TEMP_SENSORS; i++){
-    if (!temp_sensors.getAddress(tempSensors[i], i)){
+    if (!temp_sensors.getAddress(savedTempSensors[i], i)){
       Serial.print("Unable to find address for Device ");
       Serial.println(i);
     }
@@ -212,7 +300,7 @@ void measure() {
   temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
   for(i = 0; i < TEMP_SENSORS; i++){
-    temp_buffer[i] = temp_sensors.getTempCByIndex(i);
+    temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
 
     lora_stream[0 + 4*i] = i;
     lora_stream[1 + 4*i] = LORA_LPP_TEMP;
