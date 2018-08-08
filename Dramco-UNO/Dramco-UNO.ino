@@ -28,11 +28,8 @@ byte acc_buffer[ACC_BYTES];
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
-DeviceAddress tempSensors[TEMP_SENSORS];
 DeviceAddress savedTempSensors[TEMP_SENSORS];
 DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-float temp_buffer[TEMP_SENSORS]; 
 
 //LoRa module parameters
 #define DEVICE 1
@@ -125,21 +122,10 @@ uint8_t bulkCompareAddresses(DeviceAddress deviceAddress[TEMP_SENSORS], DeviceAd
   }
   return result;
 }
-uint8_t findMissingSensor(uint8_t sensors, uint8_t numberOfsensors)
-{  
-  uint8_t result = 0;
-  for (uint8_t i = 0; i < numberOfsensors; i++){
-    if((sensors & 1<<i) == 0){
-      return i;
-    }
-  }
-  return 255;
-}
-
 void setup()
 {
+  DeviceAddress tempSensors[TEMP_SENSORS];
   uint8_t detectedTempSensors;
-
   uint8_t outdoorPos;
   uint8_t treePos;
   uint8_t temp;
@@ -166,7 +152,6 @@ void setup()
   for(i = 0; i < detectedTempSensors; i++){
     temp_sensors.getAddress(tempSensors[i], i); 
   }
- 
   switch(detectedTempSensors){
     case 0: 
       Serial.println(F("Known temperature sensors cleared"));
@@ -235,6 +220,18 @@ void setup()
   //Start measurement scheduler
   scheduler.schedule(measure);  
 }
+
+// function to find a missing sensor in the list
+uint8_t findMissingSensor(uint8_t sensors, uint8_t numberOfsensors)
+{  
+  uint8_t result = 0;
+  for (uint8_t i = 0; i < numberOfsensors; i++){
+    if((sensors & 1<<i) == 0){
+      return i;
+    }
+  }
+  return 255;
+}
 // function to print a device address
 void printAddress(DeviceAddress deviceAddress)
 {
@@ -258,6 +255,7 @@ bool compareAddresses(DeviceAddress deviceAddress1, DeviceAddress deviceAddress2
   }
   return true;
 }
+
 void saveAddressToEEPROM(DeviceAddress deviceAddress, uint8_t number)
 {
   for (uint8_t i = 0; i < 8; i++)
@@ -277,6 +275,7 @@ void readAddressFromEEPROM(uint8_t *deviceAddress, uint8_t number)
 void measure() {
   uint8_t detectedTempSensors;
   uint8_t i;
+  float temp_buffer[TEMP_SENSORS]; 
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
  
@@ -289,19 +288,19 @@ void measure() {
   writeTo(ACC_POWER_CTL, 0x08);
 
   //Start up temperature sensors and read number of sensors
-  temp_sensors.begin(); 
-  detectedTempSensors = temp_sensors.getDeviceCount(); 
-  Serial.print(detectedTempSensors);
-  Serial.println(F(" temperature sensor(s) detected"));
-  for(i = 0; i < TEMP_SENSORS; i++){
-    if (!temp_sensors.getAddress(savedTempSensors[i], i)){
-      Serial.print("Unable to find address for Device ");
-      Serial.println(i);
-    }
-  }
-  temp_sensors.setResolution(12); 
+//  temp_sensors.begin(); 
+//  detectedTempSensors = temp_sensors.getDeviceCount(); 
+//  Serial.print(detectedTempSensors);
+//  Serial.println(F(" temperature sensor(s) detected"));
+//  for(i = 0; i < TEMP_SENSORS; i++){
+//    if (!temp_sensors.getAddress(savedTempSensors[i], i)){
+//      Serial.print("Unable to find address for Device ");
+//      Serial.println(i);
+//    }
+//  }
+//  temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
-  for(i = 0; i < detectedTempSensors; i++){
+  for(i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
 
     lora_stream[0 + 4*i] = i;
