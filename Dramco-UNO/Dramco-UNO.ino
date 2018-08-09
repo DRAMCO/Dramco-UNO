@@ -294,7 +294,6 @@ void readAddressFromEEPROM(uint8_t *deviceAddress, uint8_t number)
 }
 void measure() {
   uint8_t detectedTempSensors;
-  uint8_t i;
   float temp_buffer[TEMP_SENSORS]; 
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
@@ -308,7 +307,7 @@ void measure() {
   writeTo(ACC_POWER_CTL, 0x08);
 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
-  for(i = 0; i < TEMP_SENSORS; i++){
+  for(uint8_t i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
 
     lora_stream[0 + 4*i] = i;
@@ -352,7 +351,7 @@ void measure() {
   Serial.print(F("Vbatt: "));
   Serial.println(batteryVoltage, DEC); 
 
-  lora_stream[4*TEMP_SENSORS + 8] = i;
+  lora_stream[4*TEMP_SENSORS + 8] = 0;
   lora_stream[4*TEMP_SENSORS + 9] = LORA_LPP_ANALOG_OUT;
   lora_stream[4*TEMP_SENSORS + 10] = (uint8_t)((int16_t)(batteryVoltage/10) >> 8);
   lora_stream[4*TEMP_SENSORS + 11] = (uint8_t)((int16_t)(batteryVoltage/10) & 0xFF);
