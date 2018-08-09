@@ -351,7 +351,7 @@ void measure() {
   Serial.print(F("Vbatt: "));
   Serial.println(batteryVoltage, DEC); 
 
-  lora_stream[4*TEMP_SENSORS + 8] = 0;
+  lora_stream[4*TEMP_SENSORS + 8] = 3;
   lora_stream[4*TEMP_SENSORS + 9] = LORA_LPP_ANALOG_OUT;
   lora_stream[4*TEMP_SENSORS + 10] = (uint8_t)((int16_t)(batteryVoltage/10) >> 8);
   lora_stream[4*TEMP_SENSORS + 11] = (uint8_t)((int16_t)(batteryVoltage/10) & 0xFF);
