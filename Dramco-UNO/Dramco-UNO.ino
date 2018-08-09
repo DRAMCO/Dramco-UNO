@@ -24,7 +24,7 @@ byte acc_buffer[ACC_BYTES];
 
 //Temperature sensor parameters
 #define TEMP_BUS  7     //Onewire pin
-#define TEMP_SENSORS 3  //Number of temperature sensors 
+#define TEMP_SENSORS 2  //Number of temperature sensors 
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor 
@@ -32,11 +32,11 @@ DeviceAddress savedTempSensors[TEMP_SENSORS];
 DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 //LoRa module parameters
-#define DEVICE 1
+#define DEVICE 11
 
 #define POWER_ENABLE_PIN 8
-//#define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
-#define MEASURE_INTERVAL 20000   //Measurement interval time in ms each quarter
+#define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
+//#define MEASURE_INTERVAL 20000   //Measurement interval time in ms each quarter
 
 #define LORA_LPP_TEMP       0x67
 #define LORA_LPP_ACC        0x71
@@ -86,6 +86,20 @@ DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   static const u1_t PROGMEM APPSKEY[16] = { 0x43, 0xEF, 0x97, 0xCE, 0x06, 0xEE, 0xD8, 0x85, 0x4D, 0x16, 0x20, 0x87, 0xCB, 0xF0, 0x10, 0x22 };
   // LoRaWAN end-device address (DevAddr)
   static const u4_t DEVADDR = 0x26011107 ;
+#elif DEVICE == 10  //Tree node0
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x87, 0x7C, 0xB1, 0x4B, 0xF1, 0xFD, 0x31, 0x29, 0x4B, 0x67, 0xA2, 0xC5, 0x26, 0x05, 0x21, 0xA4 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x51, 0x6E, 0x30, 0x8C, 0xF8, 0x4F, 0xEA, 0x1C, 0x9A, 0x32, 0xA6, 0x2A, 0x03, 0x97, 0xBC, 0x47 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011D29 ;
+#elif DEVICE == 11  //Tree node0
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x0F, 0x91, 0xED, 0xAB, 0x4B, 0x5A, 0x6B, 0x64, 0xBE, 0xCF, 0x2D, 0x3F, 0xBA, 0x87, 0x72, 0x82 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x12, 0xFB, 0x6D, 0xBC, 0x69, 0xF3, 0x0F, 0x03, 0xB5, 0xE4, 0x3A, 0xB6, 0x4B, 0x2F, 0xD1, 0x55 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011945;
 #endif
  
 
@@ -214,6 +228,12 @@ void setup()
       Serial.println("To many temperature sensors");
       break;
   }
+
+  
+  for(i = 0; i < TEMP_SENSORS; i++){
+    readAddressFromEEPROM(savedTempSensors[i],i);
+    printAddress(savedTempSensors[i]);  
+  }
   
   temp_sensors.setResolution(12); 
   
@@ -287,18 +307,6 @@ void measure() {
    //Put the ADXL345 into Measurement Mode by writing 0x08 to the POWER_CTL register.
   writeTo(ACC_POWER_CTL, 0x08);
 
-  //Start up temperature sensors and read number of sensors
-//  temp_sensors.begin(); 
-//  detectedTempSensors = temp_sensors.getDeviceCount(); 
-//  Serial.print(detectedTempSensors);
-//  Serial.println(F(" temperature sensor(s) detected"));
-//  for(i = 0; i < TEMP_SENSORS; i++){
-//    if (!temp_sensors.getAddress(savedTempSensors[i], i)){
-//      Serial.print("Unable to find address for Device ");
-//      Serial.println(i);
-//    }
-//  }
-//  temp_sensors.setResolution(12); 
   temp_sensors.requestTemperatures(); // Send the command to get temperature readings 
   for(i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
