@@ -1,3 +1,5 @@
+//IMPORTANT NOTICE: set DISABLE_JOIN in config.h in the lmic library
+
 //Accelerometer
 #include <Wire.h>
 //Temperature sensors
@@ -11,6 +13,8 @@
 #include <DeepSleepScheduler.h>
 //EEPROM to save temperature sensor addresses
 #include <EEPROM.h>
+
+//#define VERBOSE
 
 //Accelerometer parameters
 #define ACC_ID          0x53  //ADXL345 Device ID
@@ -32,7 +36,7 @@ DeviceAddress savedTempSensors[TEMP_SENSORS];
 DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 //LoRa module parameters
-#define DEVICE 11
+#define DEVICE 18
 
 #define POWER_ENABLE_PIN 8
 #define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
@@ -41,6 +45,7 @@ DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 #define LORA_LPP_TEMP       0x67
 #define LORA_LPP_ACC        0x71
 #define LORA_LPP_ANALOG_OUT 0x03
+uint8_t temp_sensor_channel[3] = {2, 1, 0};
 
 #define LORA_PACKET_SIZE (8 + TEMP_SENSORS * 4 + 4)
 
@@ -93,23 +98,64 @@ DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
   static const u1_t PROGMEM APPSKEY[16] = { 0x51, 0x6E, 0x30, 0x8C, 0xF8, 0x4F, 0xEA, 0x1C, 0x9A, 0x32, 0xA6, 0x2A, 0x03, 0x97, 0xBC, 0x47 };
   // LoRaWAN end-device address (DevAddr)
   static const u4_t DEVADDR = 0x26011D29 ;
-#elif DEVICE == 11  //Tree node0
+#elif DEVICE == 11  //Tree node1
   // LoRaWAN NwkSKey, network session key
   static const PROGMEM u1_t NWKSKEY[16] = { 0x0F, 0x91, 0xED, 0xAB, 0x4B, 0x5A, 0x6B, 0x64, 0xBE, 0xCF, 0x2D, 0x3F, 0xBA, 0x87, 0x72, 0x82 };
   // LoRaWAN AppSKey, application session key
   static const u1_t PROGMEM APPSKEY[16] = { 0x12, 0xFB, 0x6D, 0xBC, 0x69, 0xF3, 0x0F, 0x03, 0xB5, 0xE4, 0x3A, 0xB6, 0x4B, 0x2F, 0xD1, 0x55 };
   // LoRaWAN end-device address (DevAddr)
   static const u4_t DEVADDR = 0x26011945;
+#elif DEVICE == 12  //Tree node2
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xC6, 0x30, 0x52, 0x70, 0x8A, 0x35, 0x3A, 0x6C, 0xB1, 0x5A, 0x6D, 0x64, 0xB2, 0xF4, 0xDF, 0x4B };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x34, 0x0C, 0xB9, 0x6F, 0xC5, 0x75, 0xB3, 0xD6, 0x9E, 0x1C, 0xDC, 0xB9, 0xEF, 0x91, 0x23, 0xF5 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011AC4;
+#elif DEVICE == 13  //Tree node3
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x7E, 0x64, 0x59, 0xF5, 0x0E, 0x34, 0x55, 0xE3, 0x34, 0xE6, 0xD6, 0x75, 0x9E, 0x9C, 0x86, 0x12 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xD1, 0x32, 0xEA, 0x30, 0x57, 0xA8, 0xFF, 0x81, 0x47, 0x8A, 0x1D, 0x31, 0x14, 0x8E, 0xBE, 0x75 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x260117A0;
+#elif DEVICE == 14  //Tree node4
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xE6, 0x40, 0xD7, 0xCB, 0x21, 0x22, 0xB1, 0x65, 0x69, 0xBE, 0x69, 0xAE, 0x28, 0xBB, 0x7A, 0xC6 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xCD, 0x29, 0x4D, 0x95, 0x70, 0x2C, 0x09, 0x3F, 0xE6, 0x3E, 0x5D, 0x42, 0x61, 0x58, 0x86, 0x5F };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x260112A3;
+#elif DEVICE == 15  //Tree node5
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x0D, 0x87, 0x7D, 0xAD, 0x01, 0x70, 0x99, 0x0A, 0xE0, 0x83, 0x60, 0xFA, 0x7E, 0x3B, 0x9E, 0x0B };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x62, 0x08, 0x4E, 0x15, 0xC4, 0xE1, 0xA9, 0x85, 0xC6, 0x37, 0xE1, 0xC6, 0x64, 0xB4, 0xD2, 0xAA };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011FA1;
+#elif DEVICE == 16  //Tree node6
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xA7, 0x78, 0x10, 0x2F, 0x1B, 0xA2, 0x91, 0xE3, 0x13, 0xE0, 0xBD, 0x9D, 0xC1, 0x67, 0xC8, 0xDD };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0xD2, 0xD1, 0x16, 0x21, 0x92, 0xF3, 0xC9, 0x16, 0x5E, 0x00, 0xB8, 0xF8, 0x96, 0x85, 0x09, 0xAB };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011537;
+#elif DEVICE == 17  //Tree node7
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0x90, 0x46, 0xD2, 0x7A, 0x31, 0x5B, 0x91, 0x7B, 0x6C, 0x87, 0xB3, 0xA3, 0x65, 0xCB, 0xAB, 0x9F };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x99, 0x06, 0x23, 0x71, 0xCD, 0xA2, 0xF9, 0x27, 0x5F, 0xC0, 0x32, 0xA2, 0x28, 0x98, 0x5E, 0xE8 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x26011731;
+#elif DEVICE == 18  //Tree node7
+  // LoRaWAN NwkSKey, network session key
+  static const PROGMEM u1_t NWKSKEY[16] = { 0xF3, 0xAF, 0x8B, 0xA8, 0x1B, 0x93, 0xF6, 0x5B, 0xAE, 0x06, 0xB3, 0x3B, 0x9D, 0xB2, 0x16, 0x98 };
+  // LoRaWAN AppSKey, application session key
+  static const u1_t PROGMEM APPSKEY[16] = { 0x64, 0xE2, 0x5D, 0x56, 0x98, 0x69, 0xD4, 0xE1, 0x0F, 0x7A, 0x63, 0x2F, 0xF4, 0x37, 0x37, 0xF7 };
+  // LoRaWAN end-device address (DevAddr)
+  static const u4_t DEVADDR = 0x260110D1;
 #endif
  
-
-// These callbacks are only used in over-the-air activation, so they are
-// left empty here (we cannot leave them out completely unless
-// DISABLE_JOIN is set in config.h, otherwise the linker will complain).
-void os_getArtEui (u1_t* buf) { }
-void os_getDevEui (u1_t* buf) { }
-void os_getDevKey (u1_t* buf) { }
-
 static uint8_t lora_stream[LORA_PACKET_SIZE];
 static osjob_t sendjob;
 
@@ -146,30 +192,35 @@ void setup()
   int i;
   
   //Enable Serial Port
+#ifdef VERBOSE
   Serial.begin(115200); 
+#endif
   
   //Enable Pin 3V3 LDO
   pinMode(POWER_ENABLE_PIN, OUTPUT);
-
+#ifdef VERBOSE
   Serial.println(F("Dramco-UNO"));
 
   //Start up temperature sensors
   Serial.println(F("Known temperature sensors"));
+#endif
   for(i = 0; i < TEMP_SENSORS; i++){
     readAddressFromEEPROM(savedTempSensors[i],i);
     printAddress(savedTempSensors[i]);  
   }
   temp_sensors.begin(); 
   detectedTempSensors = temp_sensors.getDeviceCount(); 
+#ifdef VERBOSE
   Serial.print(detectedTempSensors);
   Serial.println(F(" temperature sensor(s) detected"));
+#endif
   for(i = 0; i < detectedTempSensors; i++){
     temp_sensors.getAddress(tempSensors[i], i); 
   }
+#ifdef VERBOSE
   switch(detectedTempSensors){
     case 0: 
       Serial.println(F("Known temperature sensors cleared"));
-      
       for(i = 0; i < TEMP_SENSORS; i++){
         saveAddressToEEPROM(clearValue, i);
       }
@@ -228,14 +279,45 @@ void setup()
       Serial.println("To many temperature sensors");
       break;
   }
-
-  
+#else
+  switch(detectedTempSensors){
+    case 0: 
+      for(i = 0; i < TEMP_SENSORS; i++){
+        saveAddressToEEPROM(clearValue, i);
+      }
+      break;
+    case 1:
+      if (compareAddresses(savedTempSensors[0], clearValue)){
+        saveAddressToEEPROM(tempSensors[0], 0);
+      }
+      break;
+    case 2:
+      outdoorPos = bulkCompareAddresses(tempSensors, savedTempSensors[0]);
+      if(outdoorPos > 0) {
+        if (compareAddresses(savedTempSensors[1], clearValue)){
+          saveAddressToEEPROM(tempSensors[findMissingSensor(outdoorPos, 2)], 1);
+        }
+      }
+      break;  
+    case 3:
+      outdoorPos = bulkCompareAddresses(tempSensors, savedTempSensors[0]);
+      treePos = bulkCompareAddresses(tempSensors, savedTempSensors[1]);
+      if(outdoorPos > 0 && treePos > 0) {
+        if (compareAddresses(savedTempSensors[2], clearValue)){
+          saveAddressToEEPROM(tempSensors[findMissingSensor(outdoorPos | treePos, 3)], 2);
+        }
+      }
+      break;
+  }
+#endif
   for(i = 0; i < TEMP_SENSORS; i++){
     readAddressFromEEPROM(savedTempSensors[i],i);
-    printAddress(savedTempSensors[i]);  
+#ifdef VERBOSE
+    printAddress(savedTempSensors[i]); 
+#endif 
   }
   
-  temp_sensors.setResolution(12); 
+  temp_sensors.setResolution(10);   //10 bit -> conversion time 187.5 ms
   
   //Start measurement scheduler
   scheduler.schedule(measure);  
@@ -297,6 +379,51 @@ void measure() {
   float temp_buffer[TEMP_SENSORS]; 
   //Enable 3V3 LDO
   digitalWrite(POWER_ENABLE_PIN, HIGH);
+  
+  //Start Lora
+
+  // LMIC init
+  os_init();
+  // Reset the MAC state. Session and pending data transfers will be discarded.
+  LMIC_reset();
+  
+  uint8_t appskey[sizeof(APPSKEY)];
+  uint8_t nwkskey[sizeof(NWKSKEY)];
+  memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
+  memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
+  LMIC_setSession (0x1, DEVADDR, nwkskey, appskey);
+
+  // Set up the channels used by the Things Network, which corresponds
+  // to the defaults of most gateways. Without this, only three base
+  // channels from the LoRaWAN specification are used, which certainly
+  // works, so it is good for debugging, but can overload those
+  // frequencies, so be sure to configure the full frequency range of
+  // your network here (unless your network autoconfigures them).
+  // Setting up channels should happen after LMIC_setSession, as that
+  // configures the minimal channel set.
+  // NA-US channels 0-71 are configured automatically
+  LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
+  LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+  LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band
+  // TTN defines an additional channel at 869.525Mhz using SF9 for class B
+  // devices' ping slots. LMIC does not have an easy way to define set this
+  // frequency and support for class B is spotty and untested, so this
+  // frequency is not configured here.
+
+  // Disable link check validation
+  LMIC_setLinkCheckMode(0);
+
+  // TTN uses SF9 for its RX2 window.
+  LMIC.dn2Dr = DR_SF9;
+
+  // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
+  LMIC_setDrTxpow(DR_SF11,14);
  
   //Start up Accelerometer
   Wire.begin();        // join i2c bus (address optional for master)
@@ -310,17 +437,20 @@ void measure() {
   for(uint8_t i = 0; i < TEMP_SENSORS; i++){
     temp_buffer[i] = temp_sensors.getTempC(savedTempSensors[i]);
 
-    lora_stream[0 + 4*i] = i;
+    lora_stream[0 + 4*i] = temp_sensor_channel[i];
     lora_stream[1 + 4*i] = LORA_LPP_TEMP;
     lora_stream[2 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) >> 8);
     lora_stream[3 + 4*i] = (uint8_t)((int16_t)(temp_buffer[i]*10) & 0xFF);
-  
+#ifdef VERBOSE 
     Serial.print("Temp ");
     Serial.print(i);
     Serial.print(": ");
     Serial.print(temp_buffer[i]);  
+#endif
   }
+#ifdef VERBOSE   
   Serial.println();
+#endif
   
   //Read accellerometer data (Doesn't work without Temp sensor)
   readFrom(ACC_START_BYTE, ACC_BYTES, acc_buffer); //read the acceleration data from the ADXL345
@@ -338,103 +468,37 @@ void measure() {
   lora_stream[4*TEMP_SENSORS + 5] = acc_y & 0xFF;
   lora_stream[4*TEMP_SENSORS + 6] = acc_z >> 8;
   lora_stream[4*TEMP_SENSORS + 7] = acc_z & 0xFF;
-
+#ifdef VERBOSE
   Serial.print(F("x: "));
   Serial.print(acc_x);
   Serial.print(F(" y: "));
   Serial.print(acc_y);
   Serial.print(F(" z: "));
   Serial.println(acc_z);
+#endif
 
   //Read Voltage
   long batteryVoltage = readVcc();
+#ifdef VERBOSE
   Serial.print(F("Vbatt: "));
   Serial.println(batteryVoltage, DEC); 
-
+#endif
   lora_stream[4*TEMP_SENSORS + 8] = 3;
   lora_stream[4*TEMP_SENSORS + 9] = LORA_LPP_ANALOG_OUT;
   lora_stream[4*TEMP_SENSORS + 10] = (uint8_t)((int16_t)(batteryVoltage/10) >> 8);
   lora_stream[4*TEMP_SENSORS + 11] = (uint8_t)((int16_t)(batteryVoltage/10) & 0xFF);
   
-  //Start Lora
-
-  // LMIC init
-    os_init();
-    // Reset the MAC state. Session and pending data transfers will be discarded.
-    LMIC_reset();
-
-    // Set static session parameters. Instead of dynamically establishing a session
-    // by joining the network, precomputed session parameters are be provided.
-    #ifdef PROGMEM
-    // On AVR, these values are stored in flash and only copied to RAM
-    // once. Copy them to a temporary buffer here, LMIC_setSession will
-    // copy them into a buffer of its own again.
-    uint8_t appskey[sizeof(APPSKEY)];
-    uint8_t nwkskey[sizeof(NWKSKEY)];
-    memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
-    memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
-    LMIC_setSession (0x1, DEVADDR, nwkskey, appskey);
-    #else
-    // If not running an AVR with PROGMEM, just use the arrays directly
-    LMIC_setSession (0x1, DEVADDR, NWKSKEY, APPSKEY);
-    #endif
-
-    #if defined(CFG_eu868)
-    // Set up the channels used by the Things Network, which corresponds
-    // to the defaults of most gateways. Without this, only three base
-    // channels from the LoRaWAN specification are used, which certainly
-    // works, so it is good for debugging, but can overload those
-    // frequencies, so be sure to configure the full frequency range of
-    // your network here (unless your network autoconfigures them).
-    // Setting up channels should happen after LMIC_setSession, as that
-    // configures the minimal channel set.
-    // NA-US channels 0-71 are configured automatically
-    LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
-    LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band
-    // TTN defines an additional channel at 869.525Mhz using SF9 for class B
-    // devices' ping slots. LMIC does not have an easy way to define set this
-    // frequency and support for class B is spotty and untested, so this
-    // frequency is not configured here.
-    #elif defined(CFG_us915)
-    // NA-US channels 0-71 are configured automatically
-    // but only one group of 8 should (a subband) should be active
-    // TTN recommends the second sub band, 1 in a zero based count.
-    // https://github.com/TheThingsNetwork/gateway-conf/blob/master/US-global_conf.json
-    LMIC_selectSubBand(1);
-    #endif
-
-    // Disable link check validation
-    LMIC_setLinkCheckMode(0);
-
-    // TTN uses SF9 for its RX2 window.
-    LMIC.dn2Dr = DR_SF9;
-
-    // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF11,14);
-
-    // Start job
-    do_send(&sendjob);
-
+  // Start job
+  do_send(&sendjob);
   
   os_runloop_once();
 
-
-
-  delay(1100); // only read every 0,5 seconds
+  delay(1000); // only read every 0,5 seconds
   
   //Sleep
   digitalWrite(POWER_ENABLE_PIN, LOW);
-  //Serial.print("Sleep");
   pinMode(1, OUTPUT);
   digitalWrite(1, LOW);
-  //Serial.flush();
   scheduler.scheduleDelayed(measure, MEASURE_INTERVAL);
 }
 
