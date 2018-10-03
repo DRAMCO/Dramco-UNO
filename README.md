@@ -1,10 +1,8 @@
-# Dramco-UNO
+# Dramco UNORA
 
 LoRaWAN-enabled Arduino board developed by [DRAMCO](www.dramco.be) featuring an accelerometer and a onewire connection.
+Name: UNO + LORA = UNORA
 
----
-ONLY ABP IS CURRENTLY SUPPORTED!
----
 
 ## Description
 
