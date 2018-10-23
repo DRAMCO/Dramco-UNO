@@ -20,3 +20,13 @@ LoRaWAN-enabled Arduino board developed by [DRAMCO](www.dramco.be) featuring an 
 - DeepSleepScheduler lib
 
 - LoRaWAN keys see: https://www.thethingsnetwork.org/docs/devices/registration.html
+
+
+## How to cite
+```LaTex
+@Misc{Dramco UNO,
+  author =   {B. Thoen},
+  title =    {{Dramco UNO}},
+  url = {https://github.com/DRAMCO/Dramco-UNO}
+}
+```
