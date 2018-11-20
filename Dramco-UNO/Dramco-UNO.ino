@@ -28,7 +28,7 @@ byte acc_buffer[ACC_BYTES];
 
 //Temperature sensor parameters
 #define TEMP_BUS  7     //Onewire pin
-#define TEMP_SENSORS 3  //Number of temperature sensors 
+#define TEMP_SENSORS 2  //Number of temperature sensors 
 
 OneWire oneWire(TEMP_BUS);                  //Setup onwire on selected pin
 DallasTemperature temp_sensors(&oneWire);   //Setup temperature sensor
@@ -36,7 +36,7 @@ DeviceAddress savedTempSensors[TEMP_SENSORS];
 DeviceAddress clearValue = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
 //LoRa module parameters
-#define DEVICE 5
+#define DEVICE 6
 
 #define POWER_ENABLE_PIN 8
 #define MEASURE_INTERVAL 900000   //Measurement interval time in ms each quarter
@@ -598,4 +598,3 @@ long readVcc() {
   result = 1126400L / result; // Back-calculate AVcc in mV
   return result;
 }
-
