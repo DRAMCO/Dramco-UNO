@@ -1,13 +1,13 @@
 currentSleep = 8e-6
-currentTransmit = 130e-3
+currentTransmit = 25.8e-3
 currentProcessing = 13e-3
 
 numberOfBatteries = 3
 capacityAA = 2000
 capacityBank = capacityAA*numberOfBatteries;
 
-timeWake = 2
-timeTransmit = 700e-3
+timeWake = 1022e-3+190e-3
+timeTransmit = 1022e-3
 timeSleep = 15*60
 timeTotal = timeSleep + timeWake
 
