@@ -39,8 +39,9 @@ LoRaWAN-enabled Arduino board developed by [DRAMCO](www.dramco.be) featuring an 
 ## How to cite
 ```LaTex
 @Misc{Dramco-UNO,
-  author =   {G. Leenders, B. Thoen},
+  author =   {B. Thoen and G. Leenders},
   title =    {{Dramco UNO}},
-  url = {https://github.com/DRAMCO/Dramco-UNO}
+  howpublished  = "\url{https://github.com/DRAMCO/Dramco-UNO}",
+  doi = {10.5281/zenodo.2476999}
 }
 ```
