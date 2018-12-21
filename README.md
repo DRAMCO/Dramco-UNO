@@ -2,7 +2,21 @@
 
 LoRaWAN-enabled Arduino board developed by [DRAMCO](www.dramco.be) featuring an accelerometer and a onewire connection.
 
+## Folder Structure
 
+```
+├───app
+│   ├───Accelero-Test
+│   ├───Dramco-UNO
+│   └───Temprature-Sensor-Test
+├───hardware
+└───libraries
+    └───arduino-lmic-master
+```
+
+- Example applications can be found in `app`
+- Hardware folder includes the schematics 
+- Altered libraries can be found in the `libraries`folder
 
 ## Description
 
