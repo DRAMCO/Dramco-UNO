@@ -1,6 +1,6 @@
 # Dramco UNO
 
-LoRaWAN-enabled Arduino board developed by [DRAMCO](www.dramco.be) featuring an accelerometer and a onewire connection optimized for low-power.
+LoRaWAN-enabled Arduino board developed by [DRAMCO](https://www.dramco.be) featuring an accelerometer and a onewire connection optimized for low-power.
 
 ## Folder Structure
 
