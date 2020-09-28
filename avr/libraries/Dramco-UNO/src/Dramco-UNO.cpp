@@ -8,9 +8,9 @@ const lmic_pinmap lmic_pins = {
   .dio = {DRAMCO_UNO_LMIC_DIO1_PIN, DRAMCO_UNO_LMIC_DIO2_PIN, DRAMCO_UNO_LMIC_DIO3_PIN},
 };
 
-const static u1_t* _appeui;
-const static u1_t* _deveui;
-const static u1_t* _appkey;
+static u1_t _appeui[LORA_EUI_SIZE];
+static u1_t _deveui[LORA_EUI_SIZE];
+static u1_t _appkey[LORA_KEY_SIZE];
 
 static osjob_t sendjob;
 static uint8_t mydata[] = "Hello, world!";
@@ -19,18 +19,18 @@ const unsigned TX_INTERVAL = 60;
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
-    buf[8-i] = pgm_read_byte_near(_appeui + i-1);
+    buf[8-i] = _appeui[i-1];
   }
 }
 
 void os_getDevEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
-    buf[8-i] = pgm_read_byte_near(_deveui + i-1);
+    buf[8-i] = _deveui[i-1];
   }
 }
 
 void os_getDevKey (u1_t* buf) {  // no reverse here
-	memcpy_P(buf, _appkey, 16);
+	memcpy(buf, _appkey, 16);
 } 
 
 void printHex2(unsigned v) {
@@ -213,11 +213,28 @@ void do_send(osjob_t* j){
 }
 
 // ------------------------ DRAMCO UNO LIB ------------------------
-void DramcoUno::begin(const u1_t* deveui, const u1_t* appeui, const u1_t* appkey){
+void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	Serial.println("hi");
-	_deveui = deveui;
-	_appeui = appeui;
-	_appkey = appkey;
+	// copy and convert string (aka char *) to byte array
+	char tempStr[3] = {0x00, 0x00, 0x00};
+	// -> deveui
+	for(uint8_t i=0; i<LORA_EUI_SIZE; i++){
+		tempStr[0] = *(deveui+(i*2));
+		tempStr[1] = *(deveui+(i*2)+1);
+		*(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
+	}
+	// -> appeui
+	for(uint8_t i=0; i<LORA_EUI_SIZE; i++){
+		tempStr[0] = *(appeui+(i*2));
+		tempStr[1] = *(appeui+(i*2)+1);
+		*(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
+	}
+	// -> appkey
+	for(uint8_t i=0; i<LORA_KEY_SIZE; i++){
+		tempStr[0] = *(appkey+(i*2));
+		tempStr[1] = *(appkey+(i*2)+1);
+		*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+	}
 
 	pinMode(DRAMCO_UNO_LORA_ENABLE_PIN, OUTPUT);
     digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
