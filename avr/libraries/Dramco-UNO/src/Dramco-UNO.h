@@ -7,7 +7,7 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
-#define LORA_PARAMETER (static const u1_t PROGMEM)
+//#define LORA_PARAMETER (static const u1_t PROGMEM)
 
 #define DRAMCO_UNO_LMIC_NSS_PIN 6
 #define DRAMCO_UNO_LMIC_RST_PIN 5
@@ -17,9 +17,14 @@
 
 #define DRAMCO_UNO_LORA_ENABLE_PIN 8
 
+#define LORA_EUI_SIZE  8
+#define LORA_KEY_SIZE  16
+
+typedef const char * LoraParam;
+
 class DramcoUno {
 	public:
-		void begin(const u1_t* deveui, const u1_t* appeui, const u1_t* appkey);
+		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void send(char * buffer);
 		void loop();
 //	private:
