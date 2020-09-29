@@ -13,9 +13,10 @@ static u1_t _deveui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
+static osjob_t blinkjob;
 static uint8_t data[DRAMCO_UNO_BUFFER_SIZE];
 static byte _cursor;
-const unsigned TX_INTERVAL = 60;
+static uint32_t _delay;
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
@@ -216,6 +217,16 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
+void blink(){
+    digitalWrite(DRAMCO_UNO_LED_NAME, !bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN));
+    if(bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN)){
+        os_setTimedCallback(&blinkjob, os_getTime()+ms2osticks(DRAMCO_UNO_BLINK_ON), blink);
+    }
+    else{
+        os_setTimedCallback(&blinkjob, os_getTime()+sec2osticks(_delay), blink);
+    }
+}
+
 // ------------------------ DRAMCO UNO LIB ------------------------
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	// copy and convert string (aka char *) to byte array
@@ -272,6 +283,21 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     _cursor = 0;
 }
 
+void DramcoUno::startBlink(){
+    pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
+    _delay = 1;
+   blink();
+}
+
+void DramcoUno::startBlink(uint32_t d){
+    _delay = d;
+    blink();
+}
+
+void DramcoUno::stopBlink(){
+    os_clearCallback(&blinkjob);
+}
+
 void DramcoUno::send(){
 	do_send(&sendjob);
 }
@@ -290,7 +316,6 @@ float DramcoUno::readTemperature(){
         average += value;
     }
     average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
-    Serial.println(average);
     return average;
 }
 

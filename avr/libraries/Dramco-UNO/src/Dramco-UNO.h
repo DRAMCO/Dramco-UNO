@@ -6,6 +6,12 @@
 #include <hal/hal.h>
 #include <SPI.h>
 
+#define DRAMCO_UNO_LED_NAME A3
+#define DRAMCO_UNO_LED_PORT PORTC
+#define DRAMCO_UNO_LED_PIN 3
+
+#define DRAMCO_UNO_BLINK_ON 100 // Time on in ms
+
 // LoRaWAN LMIC constants
 #define DRAMCO_UNO_LMIC_NSS_PIN 6
 #define DRAMCO_UNO_LMIC_RST_PIN 5
@@ -56,6 +62,10 @@ class DramcoUno {
 		void send();
 		void loop();
 
+		void startBlink();
+		void startBlink(uint32_t d);
+		void stopBlink();
+
 		float readTemperature();
 		float readLuminosity();
 
@@ -70,7 +80,7 @@ class DramcoUno {
 		void addLuminosity(float temperature);
 		void addLuminosityToMessage();
 		void addLuminosityToMessage(float temperature);
-		
+
 	private:
 		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 
