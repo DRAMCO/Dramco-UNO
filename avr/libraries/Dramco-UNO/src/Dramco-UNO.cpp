@@ -214,7 +214,6 @@ void do_send(osjob_t* j){
 
 // ------------------------ DRAMCO UNO LIB ------------------------
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
-	Serial.println("hi");
 	// copy and convert string (aka char *) to byte array
 	char tempStr[3] = {0x00, 0x00, 0x00};
 	// -> deveui

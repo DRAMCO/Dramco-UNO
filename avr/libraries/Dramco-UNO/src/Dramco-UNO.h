@@ -1,13 +1,10 @@
-//#ifndef __Dramco_UNO
-//#define __Dramco_UNO
+#ifndef __Dramco_UNO
+#define __Dramco_UNO
 
-//#define ARDUINO_LMIC_PROJECT_CONFIG_H ../../../Dramco-UNO/src/lmic_project_config.h
 
 #include <lmic.h>
 #include <hal/hal.h>
 #include <SPI.h>
-
-//#define LORA_PARAMETER (static const u1_t PROGMEM)
 
 #define DRAMCO_UNO_LMIC_NSS_PIN 6
 #define DRAMCO_UNO_LMIC_RST_PIN 5
@@ -30,4 +27,4 @@ class DramcoUno {
 //	private:
 };
 
-//#endif __Dramco_UNO
+#endif//__Dramco_UNO
