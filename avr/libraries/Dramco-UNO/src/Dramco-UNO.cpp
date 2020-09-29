@@ -8,9 +8,9 @@ const lmic_pinmap lmic_pins = {
   .dio = {DRAMCO_UNO_LMIC_DIO1_PIN, DRAMCO_UNO_LMIC_DIO2_PIN, DRAMCO_UNO_LMIC_DIO3_PIN},
 };
 
-static u1_t _appeui[LORA_EUI_SIZE];
-static u1_t _deveui[LORA_EUI_SIZE];
-static u1_t _appkey[LORA_KEY_SIZE];
+static u1_t _appeui[DRAMCO_UNO_LORA_EUI_SIZE];
+static u1_t _deveui[DRAMCO_UNO_LORA_EUI_SIZE];
+static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
 static uint8_t mydata[] = "Hello, world!";
@@ -217,19 +217,19 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	// copy and convert string (aka char *) to byte array
 	char tempStr[3] = {0x00, 0x00, 0x00};
 	// -> deveui
-	for(uint8_t i=0; i<LORA_EUI_SIZE; i++){
+	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
 		tempStr[0] = *(deveui+(i*2));
 		tempStr[1] = *(deveui+(i*2)+1);
 		*(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
 	}
 	// -> appeui
-	for(uint8_t i=0; i<LORA_EUI_SIZE; i++){
+	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
 		tempStr[0] = *(appeui+(i*2));
 		tempStr[1] = *(appeui+(i*2)+1);
 		*(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
 	}
 	// -> appkey
-	for(uint8_t i=0; i<LORA_KEY_SIZE; i++){
+	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
 		tempStr[0] = *(appkey+(i*2));
 		tempStr[1] = *(appkey+(i*2)+1);
 		*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
@@ -278,12 +278,12 @@ float DramcoUno::readTemperature(){
     float average=0;
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
-    for(int i = 0; i < 50; i++){
-        float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*3.27; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
+    for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
+        float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
         value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
         average += value;
     }
-    average=average/50.0;
+    average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
     Serial.println(average);
     return average;
 }
