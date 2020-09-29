@@ -13,8 +13,8 @@ static u1_t _deveui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
-static uint8_t mydata[] = "Hello, world!";
-
+static uint8_t data[DRAMCO_UNO_BUFFER_SIZE];
+static byte _cursor;
 const unsigned TX_INTERVAL = 60;
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
@@ -203,11 +203,15 @@ void onEvent (ev_t ev) {
 void do_send(osjob_t* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
-        Serial.println(F("OP_TXRXPEND, not sending"));
+        #ifdef DEBUG
+        Serial.println(F("OP_TXRXPEND, not sending")); 
+        #endif
     } else {
         // Prepare upstream data transmission at the next possible time.
-        LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
+        LMIC_setTxData2(1, data, _cursor, 0);
+        #ifdef DEBUG
         Serial.println(F("Packet queued"));
+        #endif
     }
     // Next TX is scheduled after TX_COMPLETE event.
 }
@@ -264,9 +268,11 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
 	// Set data rate and transmit power (note: txpow seems to be ignored by the library)
 	LMIC_setDrTxpow(DR_SF7, 14);
+
+    _cursor = 0;
 }
 
-void DramcoUno::send(char * buffer){
+void DramcoUno::send(){
 	do_send(&sendjob);
 }
 
@@ -297,5 +303,41 @@ float DramcoUno::readLight(){
     else
         return 100.0;
 }
+
+void DramcoUno::sendTemperature(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+
+    addTemperature();
+    send();
+}
+
+void DramcoUno::addTemperature(){
+    addTemperature(readTemperature());
+}
+
+void DramcoUno::addTemperature(float temperature){
+    bool sign = temperature < 0;
+    if (sign) temperature = -temperature;
+    
+    uint32_t v = temperature * DRAMCO_UNO_LPP_TEMPERATURE_MULT;
+    
+    // format an uint32_t as if it was an int32_t
+    if (sign) {
+        uint32_t mask = (1 << (DRAMCO_UNO_LPP_TEMPERATURE_SIZE * 8)) - 1;
+        v = v & mask;
+        if (sign) v = mask - v + 1;
+    }
+
+    data[_cursor++] = 1;
+    data[_cursor++] = DRAMCO_UNO_LPP_TEMPERATURE;
+
+    for (uint8_t i=1; i<=DRAMCO_UNO_LPP_TEMPERATURE_SIZE; i++) {
+        data[_cursor + DRAMCO_UNO_LPP_TEMPERATURE_SIZE - i] = (v & 0xFF);
+        v >>= 8;
+    }
+    _cursor += DRAMCO_UNO_LPP_TEMPERATURE_SIZE;
+}
+
 
 // TODO: Sleep

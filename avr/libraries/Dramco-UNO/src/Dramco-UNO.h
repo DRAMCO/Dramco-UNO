@@ -17,6 +17,8 @@
 #define DRAMCO_UNO_LORA_EUI_SIZE  8
 #define DRAMCO_UNO_LORA_KEY_SIZE  16
 
+#define DRAMCO_UNO_BUFFER_SIZE 20 // Should be enough for temp, lumin and accelerometer
+
 // Sensor constants
 #define DRAMCO_UNO_LIGHT_SENSOR_PIN A0
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_PIN A1
@@ -50,11 +52,16 @@ typedef const char * LoraParam;
 class DramcoUno {
 	public:
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
-		void send(char * buffer);
+		void send();
 		void loop();
 		float readTemperature();
 		float readLight();
-//	private:
+		void sendTemperature();
+		void addTemperature();
+		void addTemperature(float temperature);
+	private:
+
+
 };
 
 #endif//__Dramco_UNO
