@@ -274,4 +274,28 @@ void DramcoUno::loop(){
 	os_runloop_once();
 }
 
-// TODO: Sleep, accelerometer, light
+float DramcoUno::readTemperature(){
+    float average=0;
+    analogReference(EXTERNAL);
+    digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
+    for(int i = 0; i < 50; i++){
+        float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*3.27; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
+        value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
+        average += value;
+    }
+    average=average/50.0;
+    Serial.println(average);
+    return average;
+}
+
+float DramcoUno::readLight(){
+    analogReference(EXTERNAL);
+    digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
+    float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; //160*100
+    if(value <= 100)
+        return value;
+    else
+        return 100.0;
+}
+
+// TODO: Sleep

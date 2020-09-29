@@ -14,6 +14,9 @@
 
 #define DRAMCO_UNO_LORA_ENABLE_PIN 8
 
+#define DRAMCO_UNO_LIGHT_SENSOR_PIN A0
+#define DRAMCO_UNO_TEMPERATURE_SENSOR_PIN A1
+
 #define LORA_EUI_SIZE  8
 #define LORA_KEY_SIZE  16
 
@@ -24,6 +27,8 @@ class DramcoUno {
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void send(char * buffer);
 		void loop();
+		float readTemperature();
+		float readLight();
 //	private:
 };
 
