@@ -47,6 +47,7 @@
 #define DRAMCO_UNO_LPP_TEMPERATURE_MULT            10
 #define DRAMCO_UNO_LPP_ACCELEROMETER_MULT          1000
 
+
 typedef const char * LoraParam;
 
 class DramcoUno {
@@ -54,13 +55,24 @@ class DramcoUno {
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void send();
 		void loop();
+
 		float readTemperature();
-		float readLight();
+		float readLuminosity();
+
 		void sendTemperature();
 		void addTemperature();
 		void addTemperature(float temperature);
-	private:
+		void addTemperatureToMessage();
+		void addTemperatureToMessage(float temperature);
 
+		void sendLuminosity();
+		void addLuminosity();
+		void addLuminosity(float temperature);
+		void addLuminosityToMessage();
+		void addLuminosityToMessage(float temperature);
+		
+	private:
+		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 
 };
 

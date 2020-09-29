@@ -294,7 +294,7 @@ float DramcoUno::readTemperature(){
     return average;
 }
 
-float DramcoUno::readLight(){
+float DramcoUno::readLuminosity(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
     float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; //160*100
@@ -317,26 +317,62 @@ void DramcoUno::addTemperature(){
 }
 
 void DramcoUno::addTemperature(float temperature){
-    bool sign = temperature < 0;
-    if (sign) temperature = -temperature;
+    _lppAddToBuffer(temperature, 0, DRAMCO_UNO_LPP_TEMPERATURE, DRAMCO_UNO_LPP_TEMPERATURE_SIZE, DRAMCO_UNO_LPP_TEMPERATURE_MULT);
+}
+
+void DramcoUno::addTemperatureToMessage(){
+    addTemperature();
+}
+
+void DramcoUno::addTemperatureToMessage(float temperature){
+    addTemperature(temperature);
+}
+
+void DramcoUno::sendLuminosity(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+
+    addLuminosity();
+    send();
+}
+
+void DramcoUno::addLuminosity(){
+    addLuminosity(readLuminosity());
+}
+
+void DramcoUno::addLuminosity(float luminosity){
+    _lppAddToBuffer(luminosity, 0, DRAMCO_UNO_LPP_LUMINOSITY, DRAMCO_UNO_LPP_LUMINOSITY_SIZE, DRAMCO_UNO_LPP_LUMINOSITY_MULT);
+}
+
+void DramcoUno::addLuminosityToMessage(){
+    addLuminosity();
+}
+
+void DramcoUno::addLuminosityToMessage(float luminosity){
+    addLuminosity(luminosity);
+}
+
+void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
+    data[_cursor++] = channel;
+    data[_cursor++] = type;
+
+    bool sign = val < 0;
+    if (sign) val = -val;
     
-    uint32_t v = temperature * DRAMCO_UNO_LPP_TEMPERATURE_MULT;
+    uint32_t v = val * mult;
     
     // format an uint32_t as if it was an int32_t
     if (sign) {
-        uint32_t mask = (1 << (DRAMCO_UNO_LPP_TEMPERATURE_SIZE * 8)) - 1;
+        uint32_t mask = (1 << (size * 8)) - 1;
         v = v & mask;
         if (sign) v = mask - v + 1;
     }
 
-    data[_cursor++] = 1;
-    data[_cursor++] = DRAMCO_UNO_LPP_TEMPERATURE;
-
-    for (uint8_t i=1; i<=DRAMCO_UNO_LPP_TEMPERATURE_SIZE; i++) {
-        data[_cursor + DRAMCO_UNO_LPP_TEMPERATURE_SIZE - i] = (v & 0xFF);
+    for (uint8_t i=1; i<=size; i++) {
+        data[_cursor + size - i] = (v & 0xFF);
         v >>= 8;
     }
-    _cursor += DRAMCO_UNO_LPP_TEMPERATURE_SIZE;
+    _cursor += size;
 }
 
 
