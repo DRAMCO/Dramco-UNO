@@ -250,6 +250,9 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
+    pinMode(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
+
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
@@ -297,6 +300,7 @@ void DramcoUno::send(){
         loop();
     }    
     clearMessage();
+    // TODO: duty cycle limit
 }
 
 void DramcoUno::loop(){
@@ -320,6 +324,7 @@ void DramcoUno::clearMessage(){
 }
 
 float DramcoUno::readTemperature(){
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     float average=0;
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
@@ -424,8 +429,9 @@ void DramcoUno::sleep(uint32_t d){
 void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
 
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
-    //pinMode(1, OUTPUT);
-    //digitalWrite(1, LOW);
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
+    pinMode(1, OUTPUT);
+    digitalWrite(1, LOW);
 
     // Adapted from https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h
 
@@ -507,20 +513,15 @@ unsigned long DramcoUno::_wdtEnableForSleep(const unsigned long maxWaitTimeMilli
 }
 
 void DramcoUno::_isrWdt() {
-    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L209
     sleep_disable();
     _millisInDeepSleep += _wdtSleepTimeMillis;
 }
 
 void DramcoUno::_wdtEnableInterrupt() { 
-    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L233
     WDTCSR |= (1 << WDCE) | (1 << WDIE);
 }
 
 ISR (WDT_vect) {
-    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L242
-    // WDIE & WDIF is cleared in hardware upon entering this ISR
     DramcoUno::_isrWdt();
 }
 
-// TODO: Sleep
