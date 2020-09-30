@@ -8,9 +8,12 @@ DramcoUno board;
 
 void setup() {
     board.begin(Device_EUI, Application_EUI, App_Key);
-    board.send("test");
 }
 
 void loop() {
-    board.loop();
+    board.blink();
+    board.addTemperature();
+    board.addLuminosity();
+    board.send();
+    board.delay(60000);
 }
