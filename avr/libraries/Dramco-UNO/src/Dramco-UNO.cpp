@@ -18,6 +18,9 @@ static uint8_t data[DRAMCO_UNO_BUFFER_SIZE];
 static byte _cursor;
 static uint32_t _delay;
 
+static volatile unsigned int _wdtSleepTimeMillis;
+static volatile unsigned long _millisInDeepSleep;
+
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
     buf[8-i] = _appeui[i-1];
@@ -250,8 +253,8 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 		*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
 	}
 
-	pinMode(DRAMCO_UNO_LORA_ENABLE_PIN, OUTPUT);
-    digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
+	pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
@@ -309,7 +312,7 @@ void DramcoUno::loop(){
 float DramcoUno::readTemperature(){
     float average=0;
     analogReference(EXTERNAL);
-    digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
         float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
         value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
@@ -321,7 +324,7 @@ float DramcoUno::readTemperature(){
 
 float DramcoUno::readLuminosity(){
     analogReference(EXTERNAL);
-    digitalWrite(DRAMCO_UNO_LORA_ENABLE_PIN, HIGH);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; //160*100
     if(value <= 100)
         return value;
@@ -400,5 +403,112 @@ void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_
     _cursor += size;
 }
 
+void DramcoUno::sleep(uint32_t d){
+    //digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
+    //pinMode(1, OUTPUT);
+    //digitalWrite(1, LOW);
+    #ifdef DEBUG
+    Serial.println("sleep");
+    Serial.flush();
+    #endif
+    _sleep();
+    //digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+    Serial.println("end");
+}
+
+void DramcoUno::_sleep() {
+    // Adapted from https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h
+
+    // Enable sleep bit with sleep_enable() before the sleep time evaluation because it can happen
+    // that the WDT interrupt occurs during sleep time evaluation but before the CPU
+    // sleeps. In that case, the WDT interrupt clears the sleep bit and the CPU will not sleep
+    // but continue execution immediatelly.
+    unsigned long maxWaitTimeMillis = 17000;
+    byte adcsraSave = ADCSRA;
+    _millisInDeepSleep = 0;
+    while( _millisInDeepSleep <= maxWaitTimeMillis){
+        sleep_enable(); // enables the sleep bit, a safety pin
+        
+        _wdtSleepTimeMillis = _wdtEnableForSleep(maxWaitTimeMillis-_millisInDeepSleep);
+        Serial.print("set for "); 
+        Serial.println(_wdtSleepTimeMillis);
+        Serial.flush();
+        _wdtEnableInterrupt();
+
+        noInterrupts();
+        set_sleep_mode(SLEEP_MODE);
+        
+        ADCSRA = 0;  // disable ADC
+        // turn off brown-out in software
+        #if defined(BODS) && defined(BODSE)
+        sleep_bod_disable();
+        #endif
+        interrupts (); // guarantees next instruction executed
+        sleep_cpu(); // here the device is actually put to sleep
+        
+        // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
+    }
+    if (adcsraSave != 0) {
+      // re-enable ADC
+      ADCSRA = adcsraSave;
+    }
+    sleep_disable();
+    wdt_reset();
+    wdt_disable();
+}
+
+inline unsigned long DramcoUno::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
+    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L173
+    unsigned long wdtSleepTimeMillis;
+    if (maxWaitTimeMillis >= SLEEP_TIME_8S ) {
+        wdtSleepTimeMillis = SLEEP_TIME_8S;
+        wdt_enable(WDTO_8S);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_4S ) {
+        wdtSleepTimeMillis = SLEEP_TIME_4S;
+        wdt_enable(WDTO_4S);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_2S ) {
+        wdtSleepTimeMillis = SLEEP_TIME_2S;
+        wdt_enable(WDTO_2S);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_1S ) {
+        wdtSleepTimeMillis = SLEEP_TIME_1S;
+        wdt_enable(WDTO_1S);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_500MS ) {
+        wdtSleepTimeMillis = SLEEP_TIME_500MS;
+        wdt_enable(WDTO_500MS);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_250MS ) {
+        wdtSleepTimeMillis = SLEEP_TIME_250MS;
+        wdt_enable(WDTO_250MS);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_120MS ) {
+        wdtSleepTimeMillis = SLEEP_TIME_120MS;
+        wdt_enable(WDTO_120MS);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_60MS ) {
+        wdtSleepTimeMillis = SLEEP_TIME_60MS;
+        wdt_enable(WDTO_60MS);
+    } else if (maxWaitTimeMillis >= SLEEP_TIME_30MS ) {
+        wdtSleepTimeMillis = SLEEP_TIME_30MS;
+        wdt_enable(WDTO_30MS);
+    } else { // maxWaitTimeMs >= 17
+        wdtSleepTimeMillis = SLEEP_TIME_15MS;
+        wdt_enable(WDTO_15MS);
+    }
+    return wdtSleepTimeMillis;
+}
+
+void DramcoUno::_isrWdt() {
+    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L209
+    sleep_disable();
+    _millisInDeepSleep += _wdtSleepTimeMillis;
+}
+
+void DramcoUno::_wdtEnableInterrupt() { 
+    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L233
+    WDTCSR |= (1 << WDCE) | (1 << WDIE);
+}
+
+ISR (WDT_vect) {
+    // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L242
+    // WDIE & WDIF is cleared in hardware upon entering this ISR
+    DramcoUno::_isrWdt();
+}
 
 // TODO: Sleep
