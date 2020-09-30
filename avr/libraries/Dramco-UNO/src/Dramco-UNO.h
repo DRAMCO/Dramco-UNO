@@ -66,12 +66,15 @@ typedef const char * LoraParam;
 class DramcoUno {
 	public:
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
-		void send();
+		void send();					// Made blocking
+		void sendWithOS();				// Only with OS loop
 		void loop();
+		void delay(uint32_t d);
 
-		void startBlink();
-		void startBlink(uint32_t d);
-		void stopBlink();
+		void startBlink(); 				// Only with OS loop
+		void startBlink(uint32_t d);	// Only with OS loop
+		void stopBlink();				// Only with OS loop
+		void blink();
 
 		float readTemperature();
 		float readLuminosity();

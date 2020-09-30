@@ -21,7 +21,7 @@ static uint32_t _delay;
 static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
-bool packetReady = false; 
+bool packetReadyForTransmission = false; 
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
@@ -141,7 +141,7 @@ void onEvent (ev_t ev) {
               Serial.println(F(" bytes of payload"));
             }
             #endif
-            packetReady = false; 
+            packetReadyForTransmission = false; 
             // Schedule next transmission
             //os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
@@ -216,7 +216,7 @@ void do_send(osjob_t* j){
     } else {
         // Prepare upstream data transmission at the next possible time.
         LMIC_setTxData2(1, data, _cursor, 0);
-        packetReady = true;
+        packetReadyForTransmission = true;
         #ifdef DEBUG
         Serial.println(F("Packet queued"));
         #endif
@@ -224,23 +224,23 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
-void blink(){
+void _blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, !bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN));
-    if(!packetReady){
+    if(!packetReadyForTransmission){
         if(bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN)){
-            os_setTimedCallback(&blinkjob, os_getTime()+10, blink);
+            os_setTimedCallback(&blinkjob, os_getTime()+10, _blink);
             DramcoUno::_sleep(DRAMCO_UNO_BLINK_ON);
         }
         else{
-            os_setTimedCallback(&blinkjob, os_getTime()+10, blink);
+            os_setTimedCallback(&blinkjob, os_getTime()+10, _blink);
             DramcoUno::_sleep(_delay*1000UL);
         }
     }else{
         if(bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN)){
-            os_setTimedCallback(&blinkjob, os_getTime()+ms2osticks(DRAMCO_UNO_BLINK_ON), blink);
+            os_setTimedCallback(&blinkjob, os_getTime()+ms2osticks(DRAMCO_UNO_BLINK_ON), _blink);
         }
         else{
-            os_setTimedCallback(&blinkjob, os_getTime()+sec2osticks(_delay), blink);
+            os_setTimedCallback(&blinkjob, os_getTime()+sec2osticks(_delay), _blink);
         }
     }
     
@@ -305,24 +305,48 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 void DramcoUno::startBlink(){
     pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
     _delay = 1;
-   blink();
+   _blink();
 }
 
 void DramcoUno::startBlink(uint32_t d){
     _delay = d;
-    blink();
+    _blink();
 }
 
 void DramcoUno::stopBlink(){
     os_clearCallback(&blinkjob);
 }
 
-void DramcoUno::send(){
+void DramcoUno::blink(){
+    digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
+    _sleep(100);
+    digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
+}
+
+void DramcoUno::sendWithOS(){
 	do_send(&sendjob);
+}
+
+void DramcoUno::send(){
+    do_send(&sendjob);
+    while(packetReadyForTransmission){ // This makes it blocking
+        loop();
+    }
 }
 
 void DramcoUno::loop(){
 	os_runloop_once();
+}
+
+void DramcoUno::delay(uint32_t d){
+    if(!packetReadyForTransmission)
+        DramcoUno::_sleep(d);
+    else{
+        unsigned long startMillis = millis();
+        while (millis() - startMillis < d) {
+            loop();
+        }
+    }
 }
 
 float DramcoUno::readTemperature(){
@@ -420,19 +444,19 @@ void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_
 }
 
 void DramcoUno::sleep(uint32_t d){
-    //digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
-    //pinMode(1, OUTPUT);
-    //digitalWrite(1, LOW);
     #ifdef DEBUG
     Serial.println("sleep");
     Serial.flush();
     #endif
     DramcoUno::_sleep(d);
-    //digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
-    Serial.println("end");
 }
 
 void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
+
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
+    //pinMode(1, OUTPUT);
+    //digitalWrite(1, LOW);
+
     // Adapted from https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h
 
     // Enable sleep bit with sleep_enable() before the sleep time evaluation because it can happen
@@ -471,6 +495,8 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     sleep_disable();
     wdt_reset();
     wdt_disable();
+
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 }
 
 unsigned long DramcoUno::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
