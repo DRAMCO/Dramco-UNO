@@ -91,15 +91,13 @@ class DramcoUno {
 		void sleep(uint32_t d);
 
 		static void _isrWdt(); 
-
-
+		static void _sleep(unsigned long maxWaitTimeMillis);
+		static unsigned long _wdtEnableForSleep(const unsigned long maxWaitTimeMillis);	
+		static void _wdtEnableInterrupt();
 	private:
 		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 
-
-		void _sleep();
-		inline unsigned long _wdtEnableForSleep(const unsigned long maxWaitTimeMillis);	
-		void _wdtEnableInterrupt();
+		
 
 
 
