@@ -71,9 +71,6 @@ class DramcoUno {
 		void loop();
 		void delay(uint32_t d);
 
-		void startBlink(); 				// Only with OS loop
-		void startBlink(uint32_t d);	// Only with OS loop
-		void stopBlink();				// Only with OS loop
 		void blink();
 
 		float readTemperature();
@@ -84,6 +81,7 @@ class DramcoUno {
 		void addTemperature(float temperature);
 		void addTemperatureToMessage();
 		void addTemperatureToMessage(float temperature);
+		void clearMessage();
 
 		void sendLuminosity();
 		void addLuminosity();

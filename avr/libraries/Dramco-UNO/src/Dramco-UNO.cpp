@@ -224,28 +224,6 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
-void _blink(){
-    digitalWrite(DRAMCO_UNO_LED_NAME, !bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN));
-    if(!packetReadyForTransmission){
-        if(bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN)){
-            os_setTimedCallback(&blinkjob, os_getTime()+10, _blink);
-            DramcoUno::_sleep(DRAMCO_UNO_BLINK_ON);
-        }
-        else{
-            os_setTimedCallback(&blinkjob, os_getTime()+10, _blink);
-            DramcoUno::_sleep(_delay*1000UL);
-        }
-    }else{
-        if(bitRead(DRAMCO_UNO_LED_PORT, DRAMCO_UNO_LED_PIN)){
-            os_setTimedCallback(&blinkjob, os_getTime()+ms2osticks(DRAMCO_UNO_BLINK_ON), _blink);
-        }
-        else{
-            os_setTimedCallback(&blinkjob, os_getTime()+sec2osticks(_delay), _blink);
-        }
-    }
-    
-}
-
 // ------------------------ DRAMCO UNO LIB ------------------------
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	// copy and convert string (aka char *) to byte array
@@ -302,21 +280,6 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     _cursor = 0;
 }
 
-void DramcoUno::startBlink(){
-    pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
-    _delay = 1;
-   _blink();
-}
-
-void DramcoUno::startBlink(uint32_t d){
-    _delay = d;
-    _blink();
-}
-
-void DramcoUno::stopBlink(){
-    os_clearCallback(&blinkjob);
-}
-
 void DramcoUno::blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
     _sleep(100);
@@ -325,13 +288,15 @@ void DramcoUno::blink(){
 
 void DramcoUno::sendWithOS(){
 	do_send(&sendjob);
+    //! Clear message yourself after transmit with board.clearMessage()
 }
 
 void DramcoUno::send(){
-    do_send(&sendjob);
+    sendWithOS();
     while(packetReadyForTransmission){ // This makes it blocking
         loop();
-    }
+    }    
+    clearMessage();
 }
 
 void DramcoUno::loop(){
@@ -347,6 +312,11 @@ void DramcoUno::delay(uint32_t d){
             loop();
         }
     }
+}
+
+void DramcoUno::clearMessage(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
 }
 
 float DramcoUno::readTemperature(){
