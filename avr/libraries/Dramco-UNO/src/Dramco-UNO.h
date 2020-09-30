@@ -9,6 +9,7 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
+#include <Wire.h>
 #include "DeepSleep_avr_definition.h"
 
 #define DRAMCO_UNO_LED_NAME A3
@@ -37,6 +38,7 @@
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_PIN A1
 #define DRAMCO_UNO_TEMPERATURE_AVERAGE 50
 #define DRAMCO_UNO_TEMPERATURE_CALIBRATE 3.27
+#define DRAMCO_UNO_ACCELEROMETER_ADDR 0x1E
 
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
@@ -87,6 +89,11 @@ class DramcoUno {
 		void addLuminosity(float temperature);
 		void addLuminosityToMessage();
 		void addLuminosityToMessage(float temperature);
+
+		void startAccelerometer();
+		float readAccelerationX();
+		float readAccelerationY();
+		float readAccelerationZ();
 
 		void sleep(uint32_t d);
 

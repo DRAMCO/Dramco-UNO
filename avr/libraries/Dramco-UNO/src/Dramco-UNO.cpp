@@ -21,6 +21,8 @@ static uint32_t _delay;
 static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
+LIS2HH12 _accelerometer = LIS2HH12();
+
 bool packetReadyForTransmission = false; 
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
@@ -281,6 +283,12 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 	LMIC_setDrTxpow(DR_SF7, 14);
 
     _cursor = 0;
+
+    // Initialize accelerometer
+    _accelerometer.setI2C(DRAMCO_UNO_ACCELEROMETER_ADDR);
+    _accelerometer.begin();
+    _accelerometer.setBasicConfig();
+
 }
 
 void DramcoUno::blink(){
@@ -347,6 +355,29 @@ float DramcoUno::readLuminosity(){
         return 100.0;
 }
 
+void DramcoUno::startAccelerometer(){
+    Wire.begin();
+
+}
+
+float DramcoUno::readAccelerationX(){
+    float x = 0;
+    
+    return x;
+}
+
+float DramcoUno::readAccelerationY(){
+    float y = 0;
+    
+    return y;
+}
+
+float DramcoUno::readAccelerationZ(){
+    float z = 0;
+    
+    return z;
+}
+
 void DramcoUno::sendTemperature(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
@@ -394,6 +425,7 @@ void DramcoUno::addLuminosityToMessage(){
 void DramcoUno::addLuminosityToMessage(float luminosity){
     addLuminosity(luminosity);
 }
+
 
 void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
     data[_cursor++] = channel;
@@ -446,9 +478,6 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
         sleep_enable(); // enables the sleep bit, a safety pin
         
         _wdtSleepTimeMillis = DramcoUno::_wdtEnableForSleep(maxWaitTimeMillis-_millisInDeepSleep);
-        Serial.print("set for "); 
-        Serial.println(_wdtSleepTimeMillis);
-        Serial.flush();
         DramcoUno::_wdtEnableInterrupt();
 
         noInterrupts();
@@ -524,4 +553,3 @@ void DramcoUno::_wdtEnableInterrupt() {
 ISR (WDT_vect) {
     DramcoUno::_isrWdt();
 }
-
