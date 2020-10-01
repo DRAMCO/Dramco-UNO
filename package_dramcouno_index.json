@@ -27,11 +27,7 @@
                   }
                ],
                "toolsDependencies":[
-                  {
-                     "packager":"arduino",
-                     "name":"avr-gcc",
-                     "version":"4.8.1-arduino5"
-                  }
+                  
                ]
             }
          ],
