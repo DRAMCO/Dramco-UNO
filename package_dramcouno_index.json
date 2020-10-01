@@ -15,9 +15,9 @@
                "version":"1.0.0",
                "category":"Dramco",
                "url":"https://github.com/DRAMCO/Dramco-UNO/archive/v0.2.zip",
-               "archiveFileName":"v1.0.zip",
-               "checksum":"SHA-256:b66690d48f003b06413a68d59226dc8800a4932bb71fd3956c0113cd719b42fd",
-               "size":"1576",
+               "archiveFileName":"v0.2.zip",
+               "checksum":"SHA-256:6a5362bfba534d5a7c5fd6564b9c177f55cf73afb89348b18e9cca5d8c05a4d8",
+               "size":"228",
                "help":{
                   "online":"https://dramco.be/dramco-uno"
                },
