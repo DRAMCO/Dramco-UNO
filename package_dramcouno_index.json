@@ -1,0 +1,60 @@
+{
+  "packages": [
+    {
+      "name": "dramco-uno",
+      "maintainer": "Dramco",
+      "websiteURL": "https://github.com/DRAMCO/Dramco-UNO",
+      "email": "guus.leenders@kuleuven.be",
+      "help": {
+        "online": "https://dramco.be/dramco-uno"
+      },
+      "platforms": [
+        {
+          "category": "Dramco Uno",
+          "name": "dramco-uno",
+          "url": "https://github.com/esp8266/Arduino/releases/download/2.7.4/esp8266-2.7.4.zip",
+          "version": "1.0.0",
+          "architecture": "dramco-uno",
+          "archiveFileName": "dramco-uno-1.0.0.zip",
+          "boards": [
+            {
+              "name": "Dramco Uno"
+            }
+          ],
+          "toolsDependencies": [
+
+          ],
+          "help": {
+            "online": ""
+          },
+          "size": "34470452",
+          "checksum": "SHA-256:a54db9bff81c963e0345a36de6e8443e9d33760caad1f5f48663731bdf5e19da"
+        },
+		{
+          "category": "Dramco Uno",
+          "name": "dramco-uno",
+          "url": "https://github.com/esp8266/Arduino/releases/download/2.7.4/esp8266-2.7.4.zip",
+          "version": "1.0.1",
+          "architecture": "dramco-uno",
+          "archiveFileName": "dramco-uno-1.0.0.zip",
+          "boards": [
+            {
+              "name": "Dramco Uno"
+            }
+          ],
+          "toolsDependencies": [
+
+          ],
+          "help": {
+            "online": ""
+          },
+          "size": "34470452",
+          "checksum": "SHA-256:a54db9bff81c963e0345a36de6e8443e9d33760caad1f5f48663731bdf5e19da"
+        },
+      ],
+      "tools": [
+        
+      ]
+    }
+  ]
+}
