@@ -16,12 +16,11 @@ static osjob_t sendjob;
 static osjob_t blinkjob;
 static uint8_t data[DRAMCO_UNO_BUFFER_SIZE];
 static byte _cursor;
-static uint32_t _delay;
 
 static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
-LIS2DW12 _accelerometer( I2C_MODE, 0x19, SPISettings(0, MSBFIRST, SPI_MODE0) );
+LIS2DW12 _accelerometer;
 
 bool packetReadyForTransmission = false; 
 
@@ -400,6 +399,15 @@ void DramcoUno::addTemperatureToMessage(float temperature){
     addTemperature(temperature);
 }
 
+void DramcoUno::sendTemperature(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+
+    addTemperature();
+    send();
+}
+
+
 // - Luminosity
 float DramcoUno::readLuminosity(){
     analogReference(EXTERNAL);
@@ -436,6 +444,7 @@ void DramcoUno::addLuminosityToMessage(float luminosity){
 }
 
 // - Acceleration
+
 void DramcoUno::startAccelerometer(){
     _accelerometer.begin();
 }
@@ -456,18 +465,9 @@ float DramcoUno::readTemperatureAccelerometer(){
     return _accelerometer.readTempCLowRes();
 }
 
-void DramcoUno::sendTemperature(){
-    _cursor = 0;
-    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
-
-    addTemperature();
-    send();
-}
-
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
     #ifdef DEBUG
-    Serial.println("sleep");
     Serial.flush();
     #endif
     DramcoUno::_sleep(d);

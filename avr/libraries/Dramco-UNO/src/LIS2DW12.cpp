@@ -46,58 +46,30 @@ Distributed as-is; no warranty is given.
 //  Default construction is I2C mode, I2CAddress = 0x19.
 //
 //****************************************************************************//
-LIS2DW12Core::LIS2DW12Core( uint8_t busType, uint8_t inputArg, SPISettings settingArg) : commInterface(I2C_MODE), I2CAddress(0x19), chipSelectPin(10), COMMSettings(250000, MSBFIRST, SPI_MODE3)
-{
-	commInterface = busType;
-	if( commInterface == I2C_MODE )
-	{
-		I2CAddress = inputArg;
-	}
-	if( commInterface == SPI_MODE )
-	{
-		chipSelectPin = inputArg;
-		COMMSettings = settingArg;
-	}
+
+
+
+LIS2DW12Core::LIS2DW12Core(void){
 
 }
 
-status_t LIS2DW12Core::beginCore(void)
-{
-	status_t returnError = IMU_SUCCESS;
-
-	switch (commInterface) {
-
-	case I2C_MODE:
-		Wire.begin();
-		break;
-
-	case SPI_MODE:
-		// start the SPI library:
-		SPI.begin();
-		
-		pinMode(chipSelectPin, OUTPUT);
-		digitalWrite(chipSelectPin, HIGH);
-		break;
-	default:
-		break;
-	}
-
+status_t LIS2DW12Core::beginCore(void){
+	Wire.begin();
+	
 	//Spin for a few ms
 	volatile uint8_t temp = 0;
-	for( uint16_t i = 0; i < 10000; i++ )
-	{
+	for( uint16_t i = 0; i < 10000; i++ ){
 		temp++;
 	}
 
 	//Check the ID register to determine if the operation was a success.
 	uint8_t readCheck;
 	readRegister(&readCheck, LIS2DW12_WHO_AM_I);
-	if( readCheck != 0x44 )
-	{
-		returnError = IMU_HW_ERROR;
+	if(readCheck  != 0x44 ){
+		return IMU_HW_ERROR;
 	}
 
-	return returnError;
+	return IMU_SUCCESS;
 
 }
 
@@ -125,61 +97,25 @@ status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offse
 	uint8_t c = 0;
 	uint8_t tempFFCounter = 0;
 
-	switch (commInterface) {
-
-	case I2C_MODE:
-		Wire.beginTransmission(I2CAddress);
-		Wire.write(offset);
-		if( Wire.endTransmission() != 0 )
+	Wire.beginTransmission(I2CAddress);
+	Wire.write(offset);
+	if( Wire.endTransmission() != 0 )
+	{
+		returnError = IMU_HW_ERROR;
+	}
+	else  //OK, all worked, keep going
+	{
+		// request 6 bytes from slave device
+		Wire.requestFrom((uint8_t)I2CAddress, (uint8_t)length);
+		while ( (Wire.available()) && (i < length))  // slave may send less than requested
 		{
-			returnError = IMU_HW_ERROR;
-		}
-		else  //OK, all worked, keep going
-		{
-			// request 6 bytes from slave device
-			Wire.requestFrom(I2CAddress, length);
-			while ( (Wire.available()) && (i < length))  // slave may send less than requested
-			{
-				c = Wire.read(); // receive a byte as character
-				*outputPointer = c;
-				outputPointer++;
-				i++;
-			}
-		}
-		break;
-
-	case SPI_MODE:
-		SPI.beginTransaction(COMMSettings);
-		// take the chip select low to select the device:
-		digitalWrite(chipSelectPin, LOW);
-		// send the device the register you want to read:
-		SPI.transfer(offset | 0x80);  //Ored with "read request" bit
-		while ( i < length ) // slave may send less than requested
-		{
-			c = SPI.transfer(0x00); // receive a byte as character
-			if( c == 0xFF )
-			{
-				//May have problem
-				tempFFCounter++;
-			}
+			c = Wire.read(); // receive a byte as character
 			*outputPointer = c;
 			outputPointer++;
 			i++;
 		}
-		if( tempFFCounter == i )
-		{
-			//Ok, we've recieved all ones, report
-			returnError = IMU_ALL_ONES_WARNING;
-		}
-		// take the chip select high to de-select:
-		digitalWrite(chipSelectPin, HIGH);
-		SPI.endTransaction();
-		break;
-
-	default:
-		break;
 	}
-
+	
 	return returnError;
 }
 
@@ -198,45 +134,18 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 	uint8_t numBytes = 1;
 	status_t returnError = IMU_SUCCESS;
 
-	switch (commInterface) {
-
-	case I2C_MODE:
-		Wire.beginTransmission(I2CAddress);
-		Wire.write(offset);
-		if( Wire.endTransmission() != 0 )
-		{
-			returnError = IMU_HW_ERROR;
-		}
-		Wire.requestFrom(I2CAddress, numBytes);
-		while ( Wire.available() ) // slave may send less than requested
-		{
-			result = Wire.read(); // receive a byte as a proper uint8_t
-		}
-		break;
-
-	case SPI_MODE:
-		SPI.beginTransaction(COMMSettings);
-		// take the chip select low to select the device:
-		digitalWrite(chipSelectPin, LOW);
-		// send the device the register you want to read:
-		SPI.transfer(offset | 0x80);  //Ored with "read request" bit
-		// send a value of 0 to read the first byte returned:
-		result = SPI.transfer(0x00);
-		// take the chip select high to de-select:
-		digitalWrite(chipSelectPin, HIGH);
-		SPI.endTransaction();
-		
-		if( result == 0xFF )
-		{
-			//we've recieved all ones, report
-			returnError = IMU_ALL_ONES_WARNING;
-		}
-		break;
-
-	default:
-		break;
+	Wire.beginTransmission(I2CAddress);
+	Wire.write(offset);
+	if( Wire.endTransmission() != 0 )
+	{
+		returnError = IMU_HW_ERROR;
 	}
-
+	Wire.requestFrom(I2CAddress, numBytes);
+	while ( Wire.available() ) // slave may send less than requested
+	{
+		result = Wire.read(); // receive a byte as a proper uint8_t
+	}
+	
 	*outputPointer = result;
 	return returnError;
 }
@@ -270,40 +179,16 @@ status_t LIS2DW12Core::readRegisterInt16( int16_t* outputPointer, uint8_t offset
 //
 //****************************************************************************//
 status_t LIS2DW12Core::writeRegister(uint8_t offset, uint8_t dataToWrite) {
-	status_t returnError = IMU_SUCCESS;
-	switch (commInterface) {
-	case I2C_MODE:
-		//Write the byte
-		Wire.beginTransmission(I2CAddress);
-		Wire.write(offset);
-		Wire.write(dataToWrite);
-		if( Wire.endTransmission() != 0 )
-		{
-			returnError = IMU_HW_ERROR;
-		}
-		break;
-
-	case SPI_MODE:
-		SPI.beginTransaction(COMMSettings);
-		// take the chip select low to select the device:
-		digitalWrite(chipSelectPin, LOW);
-		// send the device the register you want to read:
-		SPI.transfer(offset);
-		// send a value of 0 to read the first byte returned:
-		SPI.transfer(dataToWrite);
-		// decrement the number of bytes left to read:
-		// take the chip select high to de-select:
-		digitalWrite(chipSelectPin, HIGH);
-		SPI.endTransaction();
-		break;
-		
-		//No way to check error on this write (Except to read back but that's not reliable)
-
-	default:
-		break;
+	//Write the byte
+	Wire.beginTransmission(I2CAddress);
+	Wire.write(offset);
+	Wire.write(dataToWrite);
+	if( Wire.endTransmission() != 0 )
+	{
+		return IMU_HW_ERROR;
 	}
-
-	return returnError;
+		
+	return IMU_SUCCESS;
 }
 
 //****************************************************************************//
@@ -313,38 +198,35 @@ status_t LIS2DW12Core::writeRegister(uint8_t offset, uint8_t dataToWrite) {
 //  Construct with same rules as the core ( uint8_t busType, uint8_t inputArg )
 //
 //****************************************************************************//
-LIS2DW12::LIS2DW12( uint8_t busType, uint8_t inputArg, SPISettings settingArg ) : LIS2DW12Core( busType, inputArg, settingArg )
+LIS2DW12::LIS2DW12(void ) 
 {
 	//Construct with these default settings
 	
 	// CTRL1
-	settings.mode				= 0;		// 0 = low power, 1 = high performance, 2 = single data conversion
-	settings.lpMode				= 1;		// 1 = lp mode 1 (12 bit), 2 = lp mode 2 (14 bit) ...
-	settings.odr				= 200;		// Hz. Default is 0 = power down
+	mode				= 0;		// 0 = low power, 1 = high performance, 2 = single data conversion
+//	settings.lpMode				= 1;		// 1 = lp mode 1 (12 bit), 2 = lp mode 2 (14 bit) ...
+//	settings.odr				= 200;		// Hz. Default is 0 = power down
 	
 	// CTRL2
-	settings.csPuDisc			= 0;		// 0 = pull-up connected to CS pin
-	settings.i2cDisable			= 1;		// 0 = i2c enable, 1 = i2c disable
+//	settings.csPuDisc			= 0;		// 0 = pull-up connected to CS pin
+//	settings.i2cDisable			= 1;		// 0 = i2c enable, 1 = i2c disable
 	
 	// CTRL3
-	settings.ppOd				= 0;		// 0 = push-pull, 1 = open-drain
-	settings.lir				= 1;		// 0 = interrupt not latched, 1 = interrupt signal latched
-	settings.hiActive			= 1;		// 0 = active high, 1 = active low
+//	settings.ppOd				= 0;		// 0 = push-pull, 1 = open-drain
+//	settings.lir				= 1;		// 0 = interrupt not latched, 1 = interrupt signal latched
+//	settings.hiActive			= 1;		// 0 = active high, 1 = active low
 	
 	// CTRL6
-	settings.fs					= 2;		// 2g, 4g, 8g, 16g
-	settings.lowNoise			= 1;		// 1 = low noise enabled
+//	settings.fs					= 2;		// 2g, 4g, 8g, 16g
+//	settings.lowNoise			= 1;		// 1 = low noise enabled
 	
-	settings.tapTh				= 0x0C;		// threshold for tap detection
-	settings.latency			= 0x30;		// latency for double tap detection ((0x40 >> 4) * 32 / ODR)
-	settings.quiet				= 0x08;		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
-	settings.shock				= 0x02;		// shock time window for double tap detection (0x02 * 8 / ODR)
+//	settings.tapTh				= 0x0C;		// threshold for tap detection
+//	settings.latency			= 0x30;		// latency for double tap detection ((0x40 >> 4) * 32 / ODR)
+//	settings.quiet				= 0x08;		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
+//	settings.shock				= 0x02;		// shock time window for double tap detection (0x02 * 8 / ODR)
 	
-	settings.accelSensitivity	= 0.244;	// set correct sensitivity from LIS2DW12 Application Notes (FS = 2g, resolution = 14bit)
+//	settings.accelSensitivity	= 0.244;	// set correct sensitivity from LIS2DW12 Application Notes (FS = 2g, resolution = 14bit)
 											// this is a function of full scale setting (FS) and resolution (12 or 14 bit format)
-
-	allOnesCounter 				= 0;
-	nonSuccessCounter 			= 0;
 
 }
 
@@ -368,7 +250,7 @@ status_t LIS2DW12::begin()
 	//Setup CTRL1 register******************************
 	dataToWrite = 0; //Start Fresh!
 	//CTRL1 mode
-	switch (settings.mode) {
+	switch (mode) {
 	default:  //set default low power mode
 	case 0:
 		dataToWrite |= LIS2DW12_MODE_LOW_POWER;
@@ -380,56 +262,54 @@ status_t LIS2DW12::begin()
 		dataToWrite |= LIS2DW12_MODE_SINGLE_CONV;
 		break;
 	}
+
 	//Next, set low power mode
-	switch (settings.lpMode) {
-	default:  //set mode to low power mode 1
-	case 1:
+	#if settings_lpMode == 1
 		dataToWrite |= LIS2DW12_LP_MODE_1;
-		break;
-	case 2:
+	#endif
+	#if settings_lpMode == 2
 		dataToWrite |= LIS2DW12_LP_MODE_2;
 		break;
-	case 3:
+	#endif
+	#if settings_lpMode == 3
 		dataToWrite |= LIS2DW12_LP_MODE_3;
 		break;
-	case 4:
+	#endif
+	#if settings_lpMode == 4
 		dataToWrite |= LIS2DW12_LP_MODE_4;
-		break;
-	}
+	#endif
+
 	//Lastly, patch in ODR
-	switch (settings.odr) {
-	case 0:
+	#if settings_odr == 0
 		dataToWrite |= LIS2DW12_ODR_POWER_DOWN;
-		break;
-	case 2:
+	#endif
+	#if settings_odr == 2
 		dataToWrite |= LIS2DW12_ODR_12_5_1_6HZ;
-		break;
-	case 13:
+	#endif
+	#if settings_odr == 13
 		dataToWrite |= LIS2DW12_ODR_12_5Hz;
-		break;
-	case 25:
+	#endif
+	#if settings_odr == 25
 		dataToWrite |= LIS2DW12_ODR_25Hz;
-		break;
-	case 50:
+	#endif
+	#if settings_odr == 50
 		dataToWrite |= LIS2DW12_ODR_50Hz;
-		break;
-	case 100:
+	#endif
+	#if settings_odr == 100
 		dataToWrite |= LIS2DW12_ODR_100Hz;
-		break;
-	case 200:
+	#endif
+	#if settings_odr == 200
 		dataToWrite |= LIS2DW12_ODR_200Hz;
-		break;
-	default:  //Set default to 400
-	case 400:
+	#endif
+	#if settings_odr == 400
 		dataToWrite |= LIS2DW12_ODR_400_200Hz;
-		break;
-	case 800:
+	#endif
+	#if settings_odr == 800
 		dataToWrite |= LIS2DW12_ODR_800_200Hz;
-		break;
-	case 1600:
+	#endif
+	#if settings_odr == 1600
 		dataToWrite |= LIS2DW12_ODR_1600_200Hz;
-		break;
-	}
+	#endif
 
 	//Now, write the patched together data if it's different from default value
 	if(dataToWrite != 0) {
@@ -439,25 +319,20 @@ status_t LIS2DW12::begin()
 	//Setup CTRL2 register******************************
 	dataToWrite = 4; //Start Fresh! (this is CTRL2 default value)
 	//CTRL2 CS_PU_DISC
-	switch (settings.csPuDisc) {
-	default:  //set default CS pull-up conected
-	case 0:
+	#if settings_csPuDisc == 0
 		dataToWrite |= LIS2DW12_CS_PU_DISC_CONNECT;
-		break;
-	case 1:
+	#endif
+	#if settings_csPuDisc == 1
 		dataToWrite |= LIS2DW12_CS_PU_DISC_DISCONNECT;
-		break;
-	}
+	#endif
+
 	//Next, set i2c disable
-	switch (settings.i2cDisable) {
-	default:  //set mode i2c and spi enabled
-	case 0:
+	#if settings_i2cDisable == 0
 		dataToWrite |= LIS2DW12_I2C_ENABLE_I2C_AND_SPI;
-		break;
-	case 1:
+	#endif
+	#if settings_i2cDisable == 1
 		dataToWrite |= LIS2DW12_I2C_ENABLE_SPI_ONLY;
-		break;
-	}
+	#endif
 
 	//Now, write the patched together data if it's defferent from default value
 	if(dataToWrite != 4) {
@@ -467,35 +342,28 @@ status_t LIS2DW12::begin()
 	//Setup CTRL3 register******************************
 	dataToWrite = 0; //Start Fresh!
 	//Next, set pull-up/open-drain
-	switch (settings.ppOd) {
-	default:  //set mode to push-pull
-	case 0:
+	#if settings_ppOd == 0
 		dataToWrite |= LIS2DW12_PP_OD_PUSH_PULL;
-		break;
-	case 1:
+	#endif
+	#if settings_ppOd == 1
 		dataToWrite |= LIS2DW12_PP_OD_OPEN_DRAIN;
-		break;
-	}
+	#endif
+
 	//Next, set pull-up/open-drain
-	switch (settings.lir) {
-	default:  //set latched interrupt to not latched
-	case 0:
+	#if settings_lir == 0
 		dataToWrite |= LIS2DW12_LIR_NOT_LATCHED;
-		break;
-	case 1:
+	#endif
+	#if settings_lir == 1
 		dataToWrite |= LIS2DW12_LIR_LATCHED;
-		break;
-	}
+	#endif
+
 	//Next, set high active
-	switch (settings.hiActive) {
-	default:  //set high active mode
-	case 0:
+	#if settings_hiActive == 0
 		dataToWrite |= LIS2DW12_H_LACTIVE_HIGH;
-		break;
-	case 1:
+	#endif
+	#if settings_hiActive == 1
 		dataToWrite |= LIS2DW12_H_LACTIVE_LOW;
-		break;
-	}
+	#endif
 
 	//Now, write the patched together data if it's different from default value
 	if(dataToWrite != 0) {
@@ -505,31 +373,27 @@ status_t LIS2DW12::begin()
 
 	//Setup CTRL6 register******************************
 	//CTRL6 set full scale
-	switch (settings.fs) {
-	default:  //set full scale to 2g
-	case 2:
+
+	#if settings_fs == 2
 		dataToWrite |= LIS2DW12_FS_2G;
-		break;
-	case 4:
+	#endif
+	#if settings_fs == 4
 		dataToWrite |= LIS2DW12_FS_4G;
-		break;
-	case 8:
+	#endif
+	#if settings_fs == 8
 		dataToWrite |= LIS2DW12_FS_8G;
-		break;
-	case 16:
+	#endif
+	#if settings_fs == 16
 		dataToWrite |= LIS2DW12_FS_16G;
-		break;
-	}
+	#endif
+
 	//Next, set low noise
-	switch (settings.lowNoise) {
-	default:  //set low noise disable
-	case 0:
+	#if settings_lowNoise == 0
 		dataToWrite |= LIS2DW12_LOW_NOISE_DISABLE;
-		break;
-	case 1:
+	#endif
+	#if settings_lowNoise == 0
 		dataToWrite |= LIS2DW12_LOW_NOISE_ENABLE;
-		break;
-	}
+	#endif
 
 	//Now, write the patched together data if it's different from default value
 	if(dataToWrite != 0) {
@@ -551,76 +415,39 @@ status_t LIS2DW12::begin()
 int16_t LIS2DW12::readRawAccelX( void )
 {
 	int16_t output;
-	status_t errorLevel = readRegisterInt16( &output, LIS2DW12_OUT_X_L );
-	if( errorLevel != IMU_SUCCESS )
-	{
-		if( errorLevel == IMU_ALL_ONES_WARNING )
-		{
-			allOnesCounter++;
-		}
-		else
-		{
-			nonSuccessCounter++;
-		}
-	}
+	readRegisterInt16( &output, LIS2DW12_OUT_X_L );
 	return output;
 }
 float LIS2DW12::readFloatAccelX( void )
 {
-	float output = calcAccel(readRawAccelX());
-	return output;
+	return calcAccel(readRawAccelX());
 }
 
 int16_t LIS2DW12::readRawAccelY( void )
 {
 	int16_t output;
-	status_t errorLevel = readRegisterInt16( &output, LIS2DW12_OUT_Y_L );
-	if( errorLevel != IMU_SUCCESS )
-	{
-		if( errorLevel == IMU_ALL_ONES_WARNING )
-		{
-			allOnesCounter++;
-		}
-		else
-		{
-			nonSuccessCounter++;
-		}
-	}
+	readRegisterInt16( &output, LIS2DW12_OUT_Y_L );
 	return output;
 }
 float LIS2DW12::readFloatAccelY( void )
 {
-	float output = calcAccel(readRawAccelY());
-	return output;
+	return calcAccel(readRawAccelY());
 }
 
 int16_t LIS2DW12::readRawAccelZ( void )
 {
 	int16_t output;
-	status_t errorLevel = readRegisterInt16( &output, LIS2DW12_OUT_Z_L );
-	if( errorLevel != IMU_SUCCESS )
-	{
-		if( errorLevel == IMU_ALL_ONES_WARNING )
-		{
-			allOnesCounter++;
-		}
-		else
-		{
-			nonSuccessCounter++;
-		}
-	}
+	readRegisterInt16( &output, LIS2DW12_OUT_Z_L );
 	return output;
 }
 float LIS2DW12::readFloatAccelZ( void )
 {
-	float output = calcAccel(readRawAccelZ());
-	return output;
+	return calcAccel(readRawAccelZ());
 }
 
 float LIS2DW12::calcAccel( int16_t input )
 {
-	float output = (float)input / 4 * settings.accelSensitivity;
-	return output;
+	return (float)input / 4 * accelSensitivity;
 }
 
 //****************************************************************************//
@@ -703,7 +530,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	{
 		// Set threshold on X in TAP_THS_X rgister
 		dataToWrite = 0;  // Start fresh!
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 
 		// //Now, write the patched together data
 		errorAccumulator += writeRegister(LIS2DW12_TAP_THS_X, dataToWrite);
@@ -714,7 +541,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	if(axis == 1 || axis > 2)
 	{
 		// Set threshold on Y and axis priority (zyx) in TAP_THS_Y rgister
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 	}
 	
 	switch(axis)
@@ -741,7 +568,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	if(axis == 2 || axis > 2)
 	{
 		// Set threshold on Z and enable tap on all axis in TAP_THS_Z rgister
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 	}
 	switch(axis)
 	{
@@ -766,9 +593,9 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 
 	// Set desired latency, shock time window and quiet time window in INT_DUR rgister
 	dataToWrite = 0;  // Start fresh!
-	dataToWrite |= settings.latency;
-	dataToWrite |= settings.quiet;
-	dataToWrite |= settings.shock;
+	dataToWrite |= settings_latency;
+	dataToWrite |= settings_quiet;
+	dataToWrite |= settings_shock;
 
 	// //Now, write the patched together data
 	errorAccumulator += writeRegister(LIS2DW12_INT_DUR, dataToWrite);
@@ -809,7 +636,7 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	{
 		// Set threshold on X in TAP_THS_X rgister
 		dataToWrite = 0;  // Start fresh!
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 
 		// //Now, write the patched together data
 		errorAccumulator += writeRegister(LIS2DW12_TAP_THS_X, dataToWrite);
@@ -820,7 +647,7 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	if(axis == 1 || axis > 2)
 	{
 		// Set threshold on Y and axis priority (zyx) in TAP_THS_Y rgister
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 	}
 	
 	switch(axis)
@@ -847,7 +674,7 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	if(axis == 2 || axis > 2)
 	{
 		// Set threshold on Z and enable tap on all axis in TAP_THS_Z rgister
-		dataToWrite |=  settings.tapTh;
+		dataToWrite |=  settings_tapTh;
 	}
 	switch(axis)
 	{
@@ -872,8 +699,8 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 
 	// Set desired shock time window and quiet time window in INT_DUR rgister
 	dataToWrite = 0;  // Start fresh!
-	dataToWrite |= settings.quiet;
-	dataToWrite |= settings.shock;
+	dataToWrite |= settings_quiet;
+	dataToWrite |= settings_shock;
 
 	// //Now, write the patched together data
 	errorAccumulator += writeRegister(LIS2DW12_INT_DUR, dataToWrite);

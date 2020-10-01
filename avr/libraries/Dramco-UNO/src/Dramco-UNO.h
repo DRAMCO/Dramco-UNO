@@ -43,7 +43,6 @@
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_PIN A1
 #define DRAMCO_UNO_TEMPERATURE_AVERAGE 50
 #define DRAMCO_UNO_TEMPERATURE_CALIBRATE 3.27
-#define DRAMCO_UNO_ACCELEROMETER_ADDR 0x1E
 
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
@@ -116,11 +115,6 @@ class DramcoUno {
 		static void _wdtEnableInterrupt();
 	private:
 		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
-
-		
-
-
-
 };
 
 #endif//__Dramco_UNO

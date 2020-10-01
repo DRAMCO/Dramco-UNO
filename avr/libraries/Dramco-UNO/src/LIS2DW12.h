@@ -24,11 +24,26 @@ Distributed as-is; no warranty is given.
 #define __LIS2DW12_H__
 
 #include "stdint.h"
-#include "SPI.h"
+
+#define I2C_ADDR 0x19
+#define I2CAddress I2C_ADDR
+
+#define accelSensitivity 0.244
+#define settings_latency 0x30	// latency for double tap detection ((0x40 >> 4) * 32 / ODR)
+#define settings_quiet 0x08		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
+#define settings_shock 0x02 	// shock time window for double tap detection (0x02 * 8 / ODR)
+#define settings_tapTh 0x0C 	// threshold for tap detection
+#define settings_lowNoise 1		// 1 = low noise enabled
+#define settings_fs	2			// 2g, 4g, 8g, 16g
+#define settings_hiActive 1		// 0 = active high, 1 = active low
+#define settings_ppOd 0			// 0 = push-pull, 1 = open-drain
+#define settings_lir 1			// 0 = interrupt not latched, 1 = interrupt signal latched
+#define settings_lpMode 1		// 1 = lp mode 1 (12 bit), 2 = lp mode 2 (14 bit) ...
+#define settings_odr 200		// Hz. Default is 0 = power down
+#define settings_csPuDisc 0		// 0 = pull-up connected to CS pin
+#define settings_i2cDisable 1	// 0 = i2c enable, 1 = i2c disable
 
 #define I2C_MODE 0
-#define SPI_MODE 1
-
 // Return values 
 typedef enum
 {
@@ -49,10 +64,7 @@ typedef enum
 class LIS2DW12Core
 {
 public:
-	LIS2DW12Core( uint8_t );
-	LIS2DW12Core( uint8_t, uint8_t );
-	LIS2DW12Core( uint8_t, uint8_t, SPISettings);
-	~LIS2DW12Core() = default;
+	LIS2DW12Core( void );
 	
 	status_t beginCore( void );
 	
@@ -81,43 +93,7 @@ public:
 private:
 	
 	//Communication stuff
-	uint8_t commInterface;
-	uint8_t I2CAddress;
-	uint8_t chipSelectPin;
-	SPISettings COMMSettings;
-
 };
-
-//This struct holds the settings the driver uses to do calculations
-struct SensorSettings {
-public:
-	// CTRL1
-	uint16_t	odr;
-	uint8_t		mode;
-	uint8_t 	lpMode;
-	
-	// CTRL2
-	uint8_t 	csPuDisc;
-	uint8_t 	i2cDisable;
-	
-	// CTRL3
-	uint8_t		ppOd;
-	uint8_t		lir;
-	uint8_t		hiActive;
-	
-	// CTRL6
-	uint16_t 	fs;
-	uint8_t		lowNoise;
-	
-	uint8_t 	tapTh;
-	uint8_t		latency;
-	uint8_t		quiet;
-	uint8_t		shock;
-	
-	float 		accelSensitivity;
-	
-};
-
 
 //This is the highest level class of the driver. -> TO BE MODIFIED
 //
@@ -129,16 +105,11 @@ class LIS2DW12 : public LIS2DW12Core
 {
 public:
 	//IMU settings
-	SensorSettings settings;
-	
-	//Error checking
-	uint16_t allOnesCounter;
-	uint16_t nonSuccessCounter;
+	uint8_t mode;
 
 	//Constructor generates default SensorSettings.
 	//(over-ride after construction if desired)
-	LIS2DW12( uint8_t busType, uint8_t inputArg, SPISettings settingArg );
-	~LIS2DW12() = default;
+	LIS2DW12( void);
 	
 	//Call to apply SensorSettings
 	status_t begin(void);
