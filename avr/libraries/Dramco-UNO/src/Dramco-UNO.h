@@ -2,17 +2,17 @@
 #define __Dramco_UNO
 
 
-#include <lmic.h>
-#include <hal/hal.h>
+#include "LMIC/lmic.h"
+#include "LMIC/hal/hal.h"
 #include <SPI.h>
 
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
 #include <Wire.h>
-#include "DeepSleep_avr_definition.h"
+#include "Deepsleep/DeepSleep_avr_definition.h"
 
-#include <LIS2DW12.h>
+#include "LIS2DW12/LIS2DW12.h"
 
 #define DRAMCO_UNO_LED_NAME A3
 #define DRAMCO_UNO_LED_PORT PORTC

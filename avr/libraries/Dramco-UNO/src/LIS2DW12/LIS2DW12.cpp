@@ -25,10 +25,8 @@ Distributed as-is; no warranty is given.
 
 #include "LIS2DW12.h"
 #include "stdint.h"
-
+#include "Arduino.h"
 #include "Wire.h"
-#include "SPI.h"
-
 
 //****************************************************************************//
 //
@@ -88,8 +86,7 @@ status_t LIS2DW12Core::beginCore(void){
 //    other memory!
 //
 //****************************************************************************//
-status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offset, uint8_t length)
-{
+status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offset, uint8_t length){
 	status_t returnError = IMU_SUCCESS;
 
 	//define pointer that will point to the external space
@@ -99,12 +96,10 @@ status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offse
 
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(offset);
-	if( Wire.endTransmission() != 0 )
-	{
+	if( Wire.endTransmission() != 0 ){
 		returnError = IMU_HW_ERROR;
 	}
-	else  //OK, all worked, keep going
-	{
+	else{//OK, all worked, keep going
 		// request 6 bytes from slave device
 		Wire.requestFrom((uint8_t)I2CAddress, (uint8_t)length);
 		while ( (Wire.available()) && (i < length))  // slave may send less than requested
@@ -136,13 +131,11 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(offset);
-	if( Wire.endTransmission() != 0 )
-	{
+	if( Wire.endTransmission() != 0 ){
 		returnError = IMU_HW_ERROR;
 	}
 	Wire.requestFrom(I2CAddress, numBytes);
-	while ( Wire.available() ) // slave may send less than requested
-	{
+	while ( Wire.available() ){ // slave may send less than requested
 		result = Wire.read(); // receive a byte as a proper uint8_t
 	}
 	
@@ -159,8 +152,7 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 //    offset -- register to read
 //
 //****************************************************************************//
-status_t LIS2DW12Core::readRegisterInt16( int16_t* outputPointer, uint8_t offset )
-{
+status_t LIS2DW12Core::readRegisterInt16( int16_t* outputPointer, uint8_t offset ){
 	uint8_t myBuffer[2];
 	status_t returnError = readRegisterRegion(myBuffer, offset, 2);  //Does memory transfer
 	int16_t output = (int16_t)myBuffer[0] | int16_t(myBuffer[1] << 8);
@@ -183,8 +175,7 @@ status_t LIS2DW12Core::writeRegister(uint8_t offset, uint8_t dataToWrite) {
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(offset);
 	Wire.write(dataToWrite);
-	if( Wire.endTransmission() != 0 )
-	{
+	if( Wire.endTransmission() != 0 ){
 		return IMU_HW_ERROR;
 	}
 		
@@ -198,36 +189,8 @@ status_t LIS2DW12Core::writeRegister(uint8_t offset, uint8_t dataToWrite) {
 //  Construct with same rules as the core ( uint8_t busType, uint8_t inputArg )
 //
 //****************************************************************************//
-LIS2DW12::LIS2DW12(void ) 
-{
-	//Construct with these default settings
-	
-	// CTRL1
+LIS2DW12::LIS2DW12(void ) {
 	mode				= 0;		// 0 = low power, 1 = high performance, 2 = single data conversion
-//	settings.lpMode				= 1;		// 1 = lp mode 1 (12 bit), 2 = lp mode 2 (14 bit) ...
-//	settings.odr				= 200;		// Hz. Default is 0 = power down
-	
-	// CTRL2
-//	settings.csPuDisc			= 0;		// 0 = pull-up connected to CS pin
-//	settings.i2cDisable			= 1;		// 0 = i2c enable, 1 = i2c disable
-	
-	// CTRL3
-//	settings.ppOd				= 0;		// 0 = push-pull, 1 = open-drain
-//	settings.lir				= 1;		// 0 = interrupt not latched, 1 = interrupt signal latched
-//	settings.hiActive			= 1;		// 0 = active high, 1 = active low
-	
-	// CTRL6
-//	settings.fs					= 2;		// 2g, 4g, 8g, 16g
-//	settings.lowNoise			= 1;		// 1 = low noise enabled
-	
-//	settings.tapTh				= 0x0C;		// threshold for tap detection
-//	settings.latency			= 0x30;		// latency for double tap detection ((0x40 >> 4) * 32 / ODR)
-//	settings.quiet				= 0x08;		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
-//	settings.shock				= 0x02;		// shock time window for double tap detection (0x02 * 8 / ODR)
-	
-//	settings.accelSensitivity	= 0.244;	// set correct sensitivity from LIS2DW12 Application Notes (FS = 2g, resolution = 14bit)
-											// this is a function of full scale setting (FS) and resolution (12 or 14 bit format)
-
 }
 
 //****************************************************************************//
@@ -239,8 +202,7 @@ LIS2DW12::LIS2DW12(void )
 //  "myIMU.settings.accelEnabled = 1;" to configure before calling .begin();
 //
 //****************************************************************************//
-status_t LIS2DW12::begin()
-{
+status_t LIS2DW12::begin(){
 	//Check the settings structure values to determine how to setup the device
 	uint8_t dataToWrite = 0;  //Temporary variable
 
@@ -412,41 +374,35 @@ status_t LIS2DW12::begin()
 //  Accelerometer section
 //
 //****************************************************************************//
-int16_t LIS2DW12::readRawAccelX( void )
-{
+int16_t LIS2DW12::readRawAccelX( void ){
 	int16_t output;
 	readRegisterInt16( &output, LIS2DW12_OUT_X_L );
 	return output;
 }
-float LIS2DW12::readFloatAccelX( void )
-{
+
+float LIS2DW12::readFloatAccelX( void ){
 	return calcAccel(readRawAccelX());
 }
 
-int16_t LIS2DW12::readRawAccelY( void )
-{
+int16_t LIS2DW12::readRawAccelY( void ){
 	int16_t output;
 	readRegisterInt16( &output, LIS2DW12_OUT_Y_L );
 	return output;
 }
-float LIS2DW12::readFloatAccelY( void )
-{
+float LIS2DW12::readFloatAccelY( void ){
 	return calcAccel(readRawAccelY());
 }
 
-int16_t LIS2DW12::readRawAccelZ( void )
-{
+int16_t LIS2DW12::readRawAccelZ( void ){
 	int16_t output;
 	readRegisterInt16( &output, LIS2DW12_OUT_Z_L );
 	return output;
 }
-float LIS2DW12::readFloatAccelZ( void )
-{
+float LIS2DW12::readFloatAccelZ( void ){
 	return calcAccel(readRawAccelZ());
 }
 
-float LIS2DW12::calcAccel( int16_t input )
-{
+float LIS2DW12::calcAccel( int16_t input ){
 	return (float)input / 4 * accelSensitivity;
 }
 
@@ -455,8 +411,7 @@ float LIS2DW12::calcAccel( int16_t input )
 //  Temperature section
 //
 //****************************************************************************//
-int16_t LIS2DW12::readRawTemp( void )
-{
+int16_t LIS2DW12::readRawTemp( void ){
 	int16_t output;
 	
 	readRegisterInt16( &output, LIS2DW12_OUT_T_L );
@@ -464,8 +419,7 @@ int16_t LIS2DW12::readRawTemp( void )
 	return output;
 }  
 
-int8_t LIS2DW12::readRawTempLowRes( void )
-{
+int8_t LIS2DW12::readRawTempLowRes( void ){
 	uint8_t output;
 	
 	readRegister( &output, LIS2DW12_OUT_T );
@@ -473,24 +427,21 @@ int8_t LIS2DW12::readRawTempLowRes( void )
 	return (int8_t)output;
 }
 
-float LIS2DW12::readTempC( void )
-{
+float LIS2DW12::readTempC( void ){
 	float output = (float)readRawTemp() / 16; //divide by 16 to scale
 	output += 25; //Add 25 degrees to remove offset
 
 	return output;
 }
 
-int8_t LIS2DW12::readTempCLowRes(  void )
-{
+int8_t LIS2DW12::readTempCLowRes(  void ){
 	int8_t output = readRawTempLowRes();
 	output += 25; // Add 25 degrees to remove offset
 	
 	return output;
 }
 
-float LIS2DW12::readTempF( void )
-{
+float LIS2DW12::readTempF( void ){
 	float output = (float)readRawTemp() / 16; //divide by 16 to scale
 	output += 25; //Add 25 degrees to remove offset
 	output = (output * 9) / 5 + 32;
@@ -498,8 +449,7 @@ float LIS2DW12::readTempF( void )
 	return output;
 }
 
-int8_t LIS2DW12::readTempFLowRes( void )
-{
+int8_t LIS2DW12::readTempFLowRes( void ){
 	int8_t output = readRawTempLowRes();
 	output += 25;
 	output = (output * 9) / 5 + 32;
@@ -526,8 +476,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	errorAccumulator += writeRegister(LIS2DW12_CTRL4_INT1_PAD_CTRL, dataToWrite);
 	
 	// set X axis TH if x axis or all axis are on
-	if(axis == 0 || axis > 2)
-	{
+	if(axis == 0 || axis > 2){
 		// Set threshold on X in TAP_THS_X rgister
 		dataToWrite = 0;  // Start fresh!
 		dataToWrite |=  settings_tapTh;
@@ -538,14 +487,12 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	
 	dataToWrite = 0;  // Start fresh!
 
-	if(axis == 1 || axis > 2)
-	{
+	if(axis == 1 || axis > 2){
 		// Set threshold on Y and axis priority (zyx) in TAP_THS_Y rgister
 		dataToWrite |=  settings_tapTh;
 	}
 	
-	switch(axis)
-	{
+	switch(axis){
 		case 0:			// only x axis
 			dataToWrite |= LIS2DW12_TAP_PRIOR_XYZ1;
 		break;
@@ -565,8 +512,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 
 	dataToWrite = 0;  // Start fresh!
 	
-	if(axis == 2 || axis > 2)
-	{
+	if(axis == 2 || axis > 2){
 		// Set threshold on Z and enable tap on all axis in TAP_THS_Z rgister
 		dataToWrite |=  settings_tapTh;
 	}
@@ -632,8 +578,7 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	errorAccumulator += writeRegister(LIS2DW12_CTRL4_INT1_PAD_CTRL, dataToWrite);
 	
 	// set X axis TH if x axis or all axis are on
-	if(axis == 0 || axis > 2)
-	{
+	if(axis == 0 || axis > 2){
 		// Set threshold on X in TAP_THS_X rgister
 		dataToWrite = 0;  // Start fresh!
 		dataToWrite |=  settings_tapTh;
@@ -644,14 +589,12 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	
 	dataToWrite = 0;  // Start fresh!
 	
-	if(axis == 1 || axis > 2)
-	{
+	if(axis == 1 || axis > 2){
 		// Set threshold on Y and axis priority (zyx) in TAP_THS_Y rgister
 		dataToWrite |=  settings_tapTh;
 	}
 	
-	switch(axis)
-	{
+	switch(axis){
 		case 0:			// only x axis
 			dataToWrite |= LIS2DW12_TAP_PRIOR_XYZ1;
 		break;
@@ -671,13 +614,11 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 
 	dataToWrite = 0;  // Start fresh!
 	
-	if(axis == 2 || axis > 2)
-	{
+	if(axis == 2 || axis > 2){
 		// Set threshold on Z and enable tap on all axis in TAP_THS_Z rgister
 		dataToWrite |=  settings_tapTh;
 	}
-	switch(axis)
-	{
+	switch(axis){
 		case 0:
 			dataToWrite |= LIS2DW12_TAP_X_EN_ENABLE;
 		break;

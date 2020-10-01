@@ -230,6 +230,12 @@ void do_send(osjob_t* j){
 
 // ------------------------ DRAMCO UNO LIB ------------------------
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
+
+    #ifdef DEBUG
+    Serial.begin(115200);
+    Serial.println("Started");
+    #endif
+
 	// copy and convert string (aka char *) to byte array
 	char tempStr[3] = {0x00, 0x00, 0x00};
 	// -> deveui
@@ -446,9 +452,9 @@ void DramcoUno::addLuminosityToMessage(float luminosity){
 // - Acceleration
 
 void DramcoUno::startAccelerometer(){
-    _accelerometer.begin();
+    //_accelerometer.begin();
 }
-
+/*
 float DramcoUno::readAccelerationX(){
    return _accelerometer.readFloatAccelX();
 }
@@ -463,7 +469,7 @@ float DramcoUno::readAccelerationZ(){
 
 float DramcoUno::readTemperatureAccelerometer(){
     return _accelerometer.readTempCLowRes();
-}
+}*/
 
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
