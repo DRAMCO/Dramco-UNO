@@ -1,19 +1,19 @@
 {
    "packages":[
       {
-         "name":"dramco",
-         "maintainer":"dramco",
-         "websiteURL":"http://digistump.com",
-         "email":"support@digistump.com",
+         "name":"Dramco",
+         "maintainer":"Dramco",
+         "websiteURL":"http://dramco.be/iot",
+         "email":"uno@dramco.be",
          "help":{
-            "online":"https://digistump.com/board"
+            "online":"https://dramco.be/dramco-uno"
          },
          "platforms":[
             {
-               "name":"dramco",
+               "name":"Dramco UNO",
                "architecture":"avr",
-               "version":"1.6.7",
-               "category":"Digistump",
+               "version":"1.0.0",
+               "category":"Dramco",
                "url":"https://github.com/digistump/DigistumpArduino/releases/download/1.6.7/digistump-avr-1.6.7.zip",
                "archiveFileName":"digistump-avr-1.6.7.zip",
                "checksum":"SHA-256:7F7E9F5AB982163F7A792C411326F0192A35B8A90890B7934F2F424A5426583D",
@@ -23,25 +23,7 @@
                },
                "boards":[
                   {
-                     "name":"Digispark (Default - 16.5mhz)"
-                  },
-                  {
-                     "name":"Digispark Pro (Default 16 Mhz)"
-                  },
-                  {
-                     "name":"Digispark Pro (16 Mhz) (32 byte buffer)"
-                  },
-                  {
-                     "name":"Digispark Pro (16 Mhz) (64 byte buffer)"
-                  },
-                  {
-                     "name":"Digispark (16mhz - No USB)"
-                  },
-                  {
-                     "name":"Digispark (8mhz - No USB)"
-                  },
-                  {
-                     "name":"Digispark (1mhz - No USB)"
+                     "name":"Dramco Uno"
                   }
                ],
                "toolsDependencies":[
@@ -49,11 +31,6 @@
                      "packager":"arduino",
                      "name":"avr-gcc",
                      "version":"4.8.1-arduino5"
-                  },
-                  {
-                     "packager":"digistump",
-                     "name":"micronucleus",
-                     "version":"2.0a4"
                   }
                ]
             }
