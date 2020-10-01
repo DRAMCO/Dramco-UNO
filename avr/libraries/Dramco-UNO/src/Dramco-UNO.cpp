@@ -21,7 +21,7 @@ static uint32_t _delay;
 static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
-LIS2HH12 _accelerometer = LIS2HH12();
+LIS2DW12 _accelerometer( I2C_MODE, 0x19, SPISettings(0, MSBFIRST, SPI_MODE0) );
 
 bool packetReadyForTransmission = false; 
 
@@ -126,11 +126,13 @@ void onEvent (ev_t ev) {
         	#ifdef DEBUG
             Serial.println(F("EV_JOIN_FAILED"));
             #endif
+            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_REJOIN_FAILED:
         	#ifdef DEBUG
             Serial.println(F("EV_REJOIN_FAILED"));
             #endif
+            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_TXCOMPLETE:
         	#ifdef DEBUG
@@ -198,6 +200,7 @@ void onEvent (ev_t ev) {
         	#ifdef DEBUG
             Serial.println(F("EV_JOIN_TXCOMPLETE: no JoinAccept"));
             #endif
+            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
 
         default:
@@ -285,34 +288,29 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     _cursor = 0;
 
     // Initialize accelerometer
-    _accelerometer.setI2C(DRAMCO_UNO_ACCELEROMETER_ADDR);
-    _accelerometer.begin();
-    _accelerometer.setBasicConfig();
+    startAccelerometer();
 
 }
 
+// --- General UTILs ---
 void DramcoUno::blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
     _sleep(100);
     digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
 }
 
-void DramcoUno::sendWithOS(){
-	do_send(&sendjob);
-    //! Clear message yourself after transmit with board.clearMessage()
-}
-
-void DramcoUno::send(){
-    sendWithOS();
-    while(packetReadyForTransmission){ // This makes it blocking
-        loop();
-    }    
-    clearMessage();
-    // TODO: duty cycle limit
+void DramcoUno::error(uint8_t errorcode){
+    for(byte i = 0; i < errorcode; i++){
+        digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
+        _sleep(100);
+        digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
+        _sleep(500);
+    }
+    _sleep(2000);
 }
 
 void DramcoUno::loop(){
-	os_runloop_once();
+    os_runloop_once();
 }
 
 void DramcoUno::delay(uint32_t d){
@@ -326,11 +324,52 @@ void DramcoUno::delay(uint32_t d){
     }
 }
 
+// --- Message related things ---
+void DramcoUno::sendWithOS(){
+    do_send(&sendjob);
+    //! Clear message yourself after transmit with board.clearMessage()
+}
+
+void DramcoUno::send(){
+    sendWithOS();
+    while(packetReadyForTransmission){ // This makes it blocking
+        loop();
+    }    
+    clearMessage();
+    // TODO: duty cycle limit
+}
+
 void DramcoUno::clearMessage(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
 }
 
+void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
+    data[_cursor++] = channel;
+    data[_cursor++] = type;
+
+    bool sign = val < 0;
+    if (sign) val = -val;
+    
+    uint32_t v = val * mult;
+    
+    // format an uint32_t as if it was an int32_t
+    if (sign) {
+        uint32_t mask = (1 << (size * 8)) - 1;
+        v = v & mask;
+        if (sign) v = mask - v + 1;
+    }
+
+    for (uint8_t i=1; i<=size; i++) {
+        data[_cursor + size - i] = (v & 0xFF);
+        v >>= 8;
+    }
+    _cursor += size;
+}
+
+// --- Sensor readings ---
+
+// - Temperature 
 float DramcoUno::readTemperature(){
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     float average=0;
@@ -343,47 +382,6 @@ float DramcoUno::readTemperature(){
     }
     average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
     return average;
-}
-
-float DramcoUno::readLuminosity(){
-    analogReference(EXTERNAL);
-    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
-    float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; //160*100
-    if(value <= 100)
-        return value;
-    else
-        return 100.0;
-}
-
-void DramcoUno::startAccelerometer(){
-    Wire.begin();
-
-}
-
-float DramcoUno::readAccelerationX(){
-    float x = 0;
-    
-    return x;
-}
-
-float DramcoUno::readAccelerationY(){
-    float y = 0;
-    
-    return y;
-}
-
-float DramcoUno::readAccelerationZ(){
-    float z = 0;
-    
-    return z;
-}
-
-void DramcoUno::sendTemperature(){
-    _cursor = 0;
-    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
-
-    addTemperature();
-    send();
 }
 
 void DramcoUno::addTemperature(){
@@ -400,6 +398,17 @@ void DramcoUno::addTemperatureToMessage(){
 
 void DramcoUno::addTemperatureToMessage(float temperature){
     addTemperature(temperature);
+}
+
+// - Luminosity
+float DramcoUno::readLuminosity(){
+    analogReference(EXTERNAL);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+    float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; // max light value = 160, *100
+    if(value <= 100)
+        return value;
+    else
+        return 100.0;
 }
 
 void DramcoUno::sendLuminosity(){
@@ -426,30 +435,36 @@ void DramcoUno::addLuminosityToMessage(float luminosity){
     addLuminosity(luminosity);
 }
 
-
-void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
-    data[_cursor++] = channel;
-    data[_cursor++] = type;
-
-    bool sign = val < 0;
-    if (sign) val = -val;
-    
-    uint32_t v = val * mult;
-    
-    // format an uint32_t as if it was an int32_t
-    if (sign) {
-        uint32_t mask = (1 << (size * 8)) - 1;
-        v = v & mask;
-        if (sign) v = mask - v + 1;
-    }
-
-    for (uint8_t i=1; i<=size; i++) {
-        data[_cursor + size - i] = (v & 0xFF);
-        v >>= 8;
-    }
-    _cursor += size;
+// - Acceleration
+void DramcoUno::startAccelerometer(){
+    _accelerometer.begin();
 }
 
+float DramcoUno::readAccelerationX(){
+   return _accelerometer.readFloatAccelX();
+}
+
+float DramcoUno::readAccelerationY(){
+    return _accelerometer.readFloatAccelY();
+}
+
+float DramcoUno::readAccelerationZ(){
+    return _accelerometer.readFloatAccelZ();
+}
+
+float DramcoUno::readTemperatureAccelerometer(){
+    return _accelerometer.readTempCLowRes();
+}
+
+void DramcoUno::sendTemperature(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+
+    addTemperature();
+    send();
+}
+
+// --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
     #ifdef DEBUG
     Serial.println("sleep");
