@@ -24,6 +24,7 @@
 
 
 #define DRAMCO_UNO_ERROR_LORA_JOIN 3
+#define DRAMCO_UNO_ERROR_BUFFER 4
 
 // LoRaWAN LMIC constants
 #define DRAMCO_UNO_LMIC_NSS_PIN 6

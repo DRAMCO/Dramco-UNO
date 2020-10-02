@@ -305,13 +305,15 @@ void DramcoUno::blink(){
 }
 
 void DramcoUno::error(uint8_t errorcode){
-    for(byte i = 0; i < errorcode; i++){
-        digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
-        _sleep(100);
-        digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
-        _sleep(500);
+    while(true){
+        for(byte i = 0; i < errorcode; i++){
+            digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
+            _sleep(100);
+            digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
+            _sleep(500);
+        }
+        _sleep(2000);
     }
-    _sleep(2000);
 }
 
 void DramcoUno::loop(){
@@ -350,6 +352,11 @@ void DramcoUno::clearMessage(){
 }
 
 void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
+    // check buffer overflow
+    if ((_cursor + LPP_ACCELEROMETER_SIZE + 2) > DRAMCO_UNO_BUFFER_SIZE) {
+        error(DRAMCO_UNO_ERROR_BUFFER);
+    }
+
     data[_cursor++] = channel;
     data[_cursor++] = type;
 
@@ -370,6 +377,27 @@ void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_
         v >>= 8;
     }
     _cursor += size;
+}
+
+void DramcoUno::_lppAddAcceleration(uint8_t channel, float x, float y, float z) {
+    // check buffer overflow
+    if ((_cursor + LPP_ACCELEROMETER_SIZE + 2) > DRAMCO_UNO_BUFFER_SIZE) {
+        error(DRAMCO_UNO_ERROR_BUFFER);
+    }
+
+    int16_t vx = x * DRAMCO_UNO_LPP_ACCELEROMETER_MULT;
+    int16_t vy = y * DRAMCO_UNO_LPP_ACCELEROMETER_MULT;
+    int16_t vz = z * DRAMCO_UNO_LPP_ACCELEROMETER_MULT;
+
+    _buffer[_cursor++] = channel;
+    _buffer[_cursor++] = LPP_ACCELEROMETER;
+    _buffer[_cursor++] = vx >> 8;
+    _buffer[_cursor++] = vx;
+    _buffer[_cursor++] = vy >> 8;
+    _buffer[_cursor++] = vy;
+    _buffer[_cursor++] = vz >> 8;
+    _buffer[_cursor++] = vz;
+
 }
 
 // --- Sensor readings ---
