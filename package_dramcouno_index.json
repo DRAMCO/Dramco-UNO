@@ -14,8 +14,8 @@
                "architecture":"avr",
                "version":"1.0.0",
                "category":"Dramco",
-               "url":"https://github.com/DRAMCO/Dramco-UNO/archive/v0.2.zip",
-               "archiveFileName":"v0.2.zip",
+               "url":"https://github.com/DRAMCO/Dramco-UNO/archive/v0.2.1.zip",
+               "archiveFileName":"v0.2.1.zip",
                "checksum":"SHA-256:6a5362bfba534d5a7c5fd6564b9c177f55cf73afb89348b18e9cca5d8c05a4d8",
                "size":"228",
                "help":{
