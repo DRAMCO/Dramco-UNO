@@ -116,6 +116,7 @@ class DramcoUno {
 		static void _wdtEnableInterrupt();
 	private:
 		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
+		void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
 };
 
 #endif//__Dramco_UNO
