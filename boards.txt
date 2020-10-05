@@ -29,4 +29,4 @@ dramcouno.build.board=AVR_UNO
 dramcouno.build.core=arduino:arduino
 dramcouno.build.variant=dramco-uno
 
-dramcouno.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING -DLMIC_ENABLE_long_messages=0 -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert
+dramcouno.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING -DLMIC_ENABLE_long_messages=0 -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert -DLMIC_ENABLE_DeviceTimeReq=0
