@@ -119,6 +119,8 @@ class DramcoUno {
 		void delayUntilShake();
 		void delayUntilFall();
 		void delayUntilFreeFall();
+		void delayUntilMotion();
+		void delayUntilMovement();
 
 		void sendAccelerationOnShake();
 		void sendAccelerationOnFall();

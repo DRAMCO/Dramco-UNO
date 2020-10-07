@@ -665,6 +665,33 @@ uint8_t LIS2DW12::initFreefall( ) {
 }
 
 
+uint8_t LIS2DW12::initWakeUp( ) {
+	//Error accumulation variable
+	uint8_t errorAccumulator = 0;
+
+	uint8_t dataToWrite;  //Temporary variable
+
+	// Set bit INT1_TAP in CTRL4 rgister
+	dataToWrite = 0;  // Start fresh!
+	dataToWrite |=  LIS2DW12_INT1_WU_ENABLE;
+
+	// //Now, write the patched together data
+	errorAccumulator += writeRegister(LIS2DW12_CTRL4_INT1_PAD_CTRL, dataToWrite);
+	
+	writeRegister(LIS2DW12_WAKE_UP_THS, 0x04);
+	writeRegister(LIS2DW12_WAKE_UP_DUR, 0x02);
+
+	// Enable interrupts in CTRL7 rgister
+	dataToWrite = 0;  // Start fresh!
+	dataToWrite |=  LIS2DW12_INTERRUPTS_ENABLE_ENABLE;
+
+	// //Now, write the patched together data
+	errorAccumulator += writeRegister(LIS2DW12_CTRL_REG7, dataToWrite);
+
+	return errorAccumulator;
+}
+
+
 void LIS2DW12::printStatus(){
 	uint8_t status = 0;
 	readRegister(&status, LIS2DW12_STATUS);

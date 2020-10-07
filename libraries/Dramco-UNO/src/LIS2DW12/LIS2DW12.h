@@ -136,6 +136,7 @@ public:
 	uint8_t initDoubleTap( uint8_t );
 	uint8_t initSingleTap( uint8_t );
 	uint8_t initFreefall(void);
+	uint8_t initWakeUp( void );
 
 	float calcAccel( int16_t );
 

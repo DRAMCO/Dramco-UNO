@@ -571,6 +571,20 @@ void DramcoUno::delayUntilFall(){
     sleep(-1);
 }
 
+void DramcoUno::delayUntilMotion(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    pciInit(9);
+    _accelerometer.initWakeUp();
+    sleep(-1);
+}
+
+void DramcoUno::delayUntilMovement(){
+    delayUntilMovement();
+}
+
+
 void DramcoUno::delayUntilFreeFall(){
     delayUntilFall();
 }
@@ -593,6 +607,18 @@ void DramcoUno::sendAccelerationOnFall(){
 
 void DramcoUno::sendAccelerationOnFreeFall(){
     sendAccelerationOnFall();
+}
+
+void DramcoUno::sendAccelerationOnMotion(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    pciInit(9);
+    _accelerometer.initWakeUp();
+}
+
+void DramcoUno::sendAccelerationOnMovement(){
+    sendAccelerationOnMotion();
 }
 
 
