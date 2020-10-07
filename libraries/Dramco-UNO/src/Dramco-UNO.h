@@ -46,6 +46,10 @@
 #define DRAMCO_UNO_TEMPERATURE_CALIBRATE 3.27
 
 #define DRAMCO_UNO_ACCELEROMTER_INT_PIN 9
+#define DRAMCO_UNO_ACCELEROMTER_INT_NAME PINB1
+#define DRAMCO_UNO_ACCELEROMTER_INT_PORT PINB
+
+#define DRAMCO_UNO_BUTTON_PIN 10
 
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
@@ -125,6 +129,8 @@ class DramcoUno {
 		void sendAccelerationOnShake();
 		void sendAccelerationOnFall();
 		void sendAccelerationOnFreeFall();
+		void sendAccelerationOnMotion();
+		void sendAccelerationOnMovement();
 		
 		// --- Sleep ---
 		void sleep(uint32_t d);

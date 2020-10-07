@@ -621,6 +621,7 @@ void DramcoUno::sendAccelerationOnMovement(){
     sendAccelerationOnMotion();
 }
 
+// - Button
 
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
@@ -728,10 +729,13 @@ ISR (WDT_vect) {
 }
 
 ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here  
-    DramcoUno::blink();
-    if(_accelerometerIntAction == DRAMCO_UNO_ACCLEROMETER_ACTION_SEND)
-        DramcoUno::sendAcceleration();
-    pciDeinit();
-    _millisInDeepSleep = -1; // Stop WDT sleep
-    _keep3V3Active = false; // Accelerometer can shut up now
+    if (!(DRAMCO_UNO_ACCELEROMTER_INT_PORT & _BV(DRAMCO_UNO_ACCELEROMTER_INT_NAME))){ // If pin 9 is low
+        DramcoUno::blink();
+        if(_accelerometerIntAction == DRAMCO_UNO_ACCLEROMETER_ACTION_SEND)
+            DramcoUno::sendAcceleration();
+        pciDeinit();
+        _millisInDeepSleep = -1; // Stop WDT sleep
+        _keep3V3Active = false; // Accelerometer can shut up now
+    }
+    
 }
