@@ -25,10 +25,10 @@ Distributed as-is; no warranty is given.
 
 #include "stdint.h"
 
-#define I2C_ADDR 0x19
+#define I2C_ADDR 0x18
 #define I2CAddress I2C_ADDR
 
-#define accelSensitivity 0.244
+#define accelSensitivity 0.000976 // mg per digit
 #define settings_latency 0x30	// latency for double tap detection ((0x40 >> 4) * 32 / ODR)
 #define settings_quiet 0x08		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
 #define settings_shock 0x02 	// shock time window for double tap detection (0x02 * 8 / ODR)
@@ -37,11 +37,11 @@ Distributed as-is; no warranty is given.
 #define settings_fs	2			// 2g, 4g, 8g, 16g
 #define settings_hiActive 1		// 0 = active high, 1 = active low
 #define settings_ppOd 0			// 0 = push-pull, 1 = open-drain
-#define settings_lir 1			// 0 = interrupt not latched, 1 = interrupt signal latched
+#define settings_lir 0			// 0 = interrupt not latched, 1 = interrupt signal latched
 #define settings_lpMode 1		// 1 = lp mode 1 (12 bit), 2 = lp mode 2 (14 bit) ...
-#define settings_odr 200		// Hz. Default is 0 = power down
-#define settings_csPuDisc 0		// 0 = pull-up connected to CS pin
-#define settings_i2cDisable 1	// 0 = i2c enable, 1 = i2c disable
+#define settings_odr 50			// Hz. Default is 0 = power down
+#define settings_csPuDisc 1		// 0 = pull-up connected to CS pin
+#define settings_i2cDisable 0	// 0 = i2c enable, 1 = i2c disable
 
 #define I2C_MODE 0
 // Return values 
@@ -135,8 +135,11 @@ public:
 	//TAP detection stuff
 	uint8_t initDoubleTap( uint8_t );
 	uint8_t initSingleTap( uint8_t );
+	uint8_t initFreefall(void);
 
 	float calcAccel( int16_t );
+
+	void printStatus(void);
 	
 private:
 

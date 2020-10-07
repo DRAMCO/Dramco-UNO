@@ -20,6 +20,11 @@ static byte _cursor;
 static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
+static bool _keep3V3Active = false;
+static uint8_t _accelerometerIntAction = 0;
+
+float _calibration = 1;
+
 LIS2DW12 _accelerometer;
 
 bool packetReadyForTransmission = false; 
@@ -228,6 +233,16 @@ void do_send(osjob_t* j){
     // Next TX is scheduled after TX_COMPLETE event.
 }
 
+void pciInit(byte pin){
+    *digitalPinToPCMSK(pin) |= bit (digitalPinToPCMSKbit(pin));  // enable pin
+    PCIFR  |= bit (digitalPinToPCICRbit(pin)); // clear any outstanding interrupt
+    PCICR  |= bit (digitalPinToPCICRbit(pin)); // enable interrupt for the group
+}
+
+void pciDeinit(){
+    PCICR  = 0x00; // disable interrupt for all
+}
+
 // ------------------------ DRAMCO UNO LIB ------------------------
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
@@ -263,6 +278,8 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     pinMode(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, OUTPUT);
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
 
+    pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
+
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
@@ -292,9 +309,11 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
     _cursor = 0;
 
-    // Initialize accelerometer
-    startAccelerometer();
+    // Initialize accelerometer int pin
+    pinMode(DRAMCO_UNO_ACCELEROMTER_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
 
+    calibrateTemperature();
 }
 
 // --- General UTILs ---
@@ -338,11 +357,12 @@ void DramcoUno::sendWithOS(){
 }
 
 void DramcoUno::send(){
-    sendWithOS();
+    do_send(&sendjob);
     while(packetReadyForTransmission){ // This makes it blocking
-        loop();
+        os_runloop_once();
     }    
-    clearMessage();
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
     // TODO: duty cycle limit
 }
 
@@ -403,22 +423,31 @@ void DramcoUno::_lppAddAcceleration(uint8_t channel, float x, float y, float z) 
 // --- Sensor readings ---
 
 // - Temperature 
+void DramcoUno::calibrateTemperature(){
+    _calibration = readTemperatureAccelerometer()/readTemperature();
+}
+
 float DramcoUno::readTemperature(){
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     float average=0;
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+    _keep3V3Active = true;
+    delay(300); // Wait for voltage to stabilize
+    _keep3V3Active = false;
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
         float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
         value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
         average += value;
     }
     average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
-    return average;
+    return average*_calibration;
 }
 
 void DramcoUno::addTemperature(){
-    addTemperature(readTemperature());
+    float temp = readTemperature();
+    Serial.println(temp);
+    addTemperature(temp);
 }
 
 void DramcoUno::addTemperature(float temperature){
@@ -478,26 +507,94 @@ void DramcoUno::addLuminosityToMessage(float luminosity){
 }
 
 // - Acceleration
-
-void DramcoUno::startAccelerometer(){
-    //_accelerometer.begin();
-}
-/*
 float DramcoUno::readAccelerationX(){
-   return _accelerometer.readFloatAccelX();
+    _accelerometer.begin();
+    return _accelerometer.readFloatAccelX();
 }
 
 float DramcoUno::readAccelerationY(){
+    _accelerometer.begin();
     return _accelerometer.readFloatAccelY();
 }
 
 float DramcoUno::readAccelerationZ(){
+    _accelerometer.begin();
     return _accelerometer.readFloatAccelZ();
 }
 
 float DramcoUno::readTemperatureAccelerometer(){
-    return _accelerometer.readTempCLowRes();
-}*/
+    _accelerometer.begin();
+    return _accelerometer.readTempC();
+}
+
+void DramcoUno::addAcceleration(){
+    _accelerometer.begin();
+    float x = _accelerometer.readFloatAccelX();
+    float y = _accelerometer.readFloatAccelY();
+    float z = _accelerometer.readFloatAccelZ();
+    Serial.print("x: ");
+    Serial.println(x);
+    Serial.print("y: ");
+    Serial.println(y);
+    Serial.print("z: ");
+    Serial.println(z);
+    _lppAddAcceleration(0, x, y, z);
+}
+
+void DramcoUno::addAccelerationToMessage(){
+    addAcceleration();
+}
+
+void DramcoUno::sendAcceleration(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+    
+    DramcoUno::addAcceleration();
+    DramcoUno::send();
+}
+
+void DramcoUno::delayUntilShake(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    pciInit(9);
+    _accelerometer.initDoubleTap(4);
+    sleep(-1);
+}
+
+void DramcoUno::delayUntilFall(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    pciInit(9);
+    _accelerometer.initFreefall();
+    sleep(-1);
+}
+
+void DramcoUno::delayUntilFreeFall(){
+    delayUntilFall();
+}
+
+void DramcoUno::sendAccelerationOnShake(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    pciInit(9);
+    _accelerometer.initDoubleTap(4);
+}
+
+void DramcoUno::sendAccelerationOnFall(){
+    _accelerometer.begin();
+    _keep3V3Active = true;
+    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    pciInit(9);
+    _accelerometer.initFreefall();
+}
+
+void DramcoUno::sendAccelerationOnFreeFall(){
+    sendAccelerationOnFall();
+}
+
 
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
@@ -509,7 +606,8 @@ void DramcoUno::sleep(uint32_t d){
 
 void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
 
-    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
+    if(!_keep3V3Active)
+        digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
     pinMode(1, OUTPUT);
     digitalWrite(1, LOW);
@@ -523,7 +621,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
 
     byte adcsraSave = ADCSRA;
     _millisInDeepSleep = 0;
-    while( _millisInDeepSleep <= maxWaitTimeMillis){
+    while( _millisInDeepSleep <= maxWaitTimeMillis-1){ // -1 for enabling to stop sleeping
         sleep_enable(); // enables the sleep bit, a safety pin
         
         _wdtSleepTimeMillis = DramcoUno::_wdtEnableForSleep(maxWaitTimeMillis-_millisInDeepSleep);
@@ -601,4 +699,13 @@ void DramcoUno::_wdtEnableInterrupt() {
 
 ISR (WDT_vect) {
     DramcoUno::_isrWdt();
+}
+
+ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here  
+    DramcoUno::blink();
+    if(_accelerometerIntAction == DRAMCO_UNO_ACCLEROMETER_ACTION_SEND)
+        DramcoUno::sendAcceleration();
+    pciDeinit();
+    _millisInDeepSleep = -1; // Stop WDT sleep
+    _keep3V3Active = false; // Accelerometer can shut up now
 }

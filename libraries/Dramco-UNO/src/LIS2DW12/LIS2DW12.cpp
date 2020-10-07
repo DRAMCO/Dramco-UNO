@@ -155,8 +155,13 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 status_t LIS2DW12Core::readRegisterInt16( int16_t* outputPointer, uint8_t offset ){
 	uint8_t myBuffer[2];
 	status_t returnError = readRegisterRegion(myBuffer, offset, 2);  //Does memory transfer
-	int16_t output = (int16_t)myBuffer[0] | int16_t(myBuffer[1] << 8);
-	
+	// Changed to allow uint8_t/int16_t conversion, only in 12 bit mode
+	int16_t output = (((myBuffer[0] | myBuffer[1] << 8)<<((sizeof(int)-2)*8)) >> ((sizeof(int)-2)*8));
+	#if settings_lpMode == 1
+		output = output >> 4;
+	#else
+		output = output >> 2;
+	#endif
 	*outputPointer = output;
 	return returnError;
 }
@@ -403,7 +408,7 @@ float LIS2DW12::readFloatAccelZ( void ){
 }
 
 float LIS2DW12::calcAccel( int16_t input ){
-	return (float)input / 4 * accelSensitivity;
+	return (float)input  * accelSensitivity;
 }
 
 //****************************************************************************//
@@ -434,35 +439,13 @@ float LIS2DW12::readTempC( void ){
 	return output;
 }
 
-int8_t LIS2DW12::readTempCLowRes(  void ){
-	int8_t output = readRawTempLowRes();
-	output += 25; // Add 25 degrees to remove offset
-	
-	return output;
-}
-
-float LIS2DW12::readTempF( void ){
-	float output = (float)readRawTemp() / 16; //divide by 16 to scale
-	output += 25; //Add 25 degrees to remove offset
-	output = (output * 9) / 5 + 32;
-
-	return output;
-}
-
-int8_t LIS2DW12::readTempFLowRes( void ){
-	int8_t output = readRawTempLowRes();
-	output += 25;
-	output = (output * 9) / 5 + 32;
-	
-	return output;
-}
 
 //****************************************************************************//
 //
 //  TAP detection section
 //
 //****************************************************************************//
-uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
+uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {// 0: only X axis, 1: only Y axis, 2: only Z axis, >2: all axis
 	//Error accumulation variable
 	uint8_t errorAccumulator = 0;
 
@@ -557,6 +540,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	// Enable interrupts in CTRL7 rgister
 	dataToWrite = 0;  // Start fresh!
 	dataToWrite |=  LIS2DW12_INTERRUPTS_ENABLE_ENABLE;
+	//dataToWrite |=  LIS2DW12_INT2_ON_INT1_ENABLE;
 
 	// //Now, write the patched together data
 	errorAccumulator += writeRegister(LIS2DW12_CTRL_REG7, dataToWrite);
@@ -564,7 +548,7 @@ uint8_t LIS2DW12::initDoubleTap( uint8_t axis ) {
 	return errorAccumulator;
 }
 
-uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
+uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {// 0: only X axis, 1: only Y axis, 2: only Z axis, >2: all axis
 	//Error accumulation variable
 	uint8_t errorAccumulator = 0;
 
@@ -655,4 +639,34 @@ uint8_t LIS2DW12::initSingleTap( uint8_t axis ) {
 	errorAccumulator += writeRegister(LIS2DW12_CTRL_REG7, dataToWrite);
 
 	return errorAccumulator;
+}
+
+uint8_t LIS2DW12::initFreefall( ) {
+	//Error accumulation variable
+	uint8_t errorAccumulator = 0;
+
+	uint8_t dataToWrite;  //Temporary variable
+
+	// Set bit INT1_TAP in CTRL4 rgister
+	dataToWrite = 0;  // Start fresh!
+	dataToWrite |=  LIS2DW12_INT1_FF_ENABLE;
+
+	// //Now, write the patched together data
+	errorAccumulator += writeRegister(LIS2DW12_CTRL4_INT1_PAD_CTRL, dataToWrite);
+	
+	// Enable interrupts in CTRL7 rgister
+	dataToWrite = 0;  // Start fresh!
+	dataToWrite |=  LIS2DW12_INTERRUPTS_ENABLE_ENABLE;
+
+	// //Now, write the patched together data
+	errorAccumulator += writeRegister(LIS2DW12_CTRL_REG7, dataToWrite);
+
+	return errorAccumulator;
+}
+
+
+void LIS2DW12::printStatus(){
+	uint8_t status = 0;
+	readRegister(&status, LIS2DW12_STATUS);
+	Serial.println(status, BIN);
 }

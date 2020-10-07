@@ -45,6 +45,8 @@
 #define DRAMCO_UNO_TEMPERATURE_AVERAGE 50
 #define DRAMCO_UNO_TEMPERATURE_CALIBRATE 3.27
 
+#define DRAMCO_UNO_ACCELEROMTER_INT_PIN 9
+
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
 #define DRAMCO_UNO_LPP_ANALOG_INPUT                2     // 2 bytes, 0.01 signed
@@ -67,8 +69,8 @@
 #define DRAMCO_UNO_LPP_TEMPERATURE_MULT            10
 #define DRAMCO_UNO_LPP_ACCELEROMETER_MULT          1000
 
-#define DEBUG
-
+#define DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE		   1
+#define DRAMCO_UNO_ACCLEROMETER_ACTION_SEND		   2
 typedef const char * LoraParam;
 
 class DramcoUno {
@@ -78,16 +80,17 @@ class DramcoUno {
 		// --- Utils ---
 		void loop();
 		void delay(uint32_t d);
-		void blink();
+		static void blink();
 		static void error(uint8_t errorcode);
 
 		// --- Message ---
-		void send();					// Made blocking
+		static void send();					// Made blocking
 		void sendWithOS();				// Only with OS loop
 		void clearMessage();
 
 		// --- Sensors ---
 		// - Temperature
+		void calibrateTemperature();
 		float readTemperature();		// Gets temperature in degrees C
 		void sendTemperature();			
 		void addTemperature();
@@ -104,12 +107,23 @@ class DramcoUno {
 		void addLuminosityToMessage(float temperature);
 
 		// - Accelerometer
-		void startAccelerometer();
 		float readAccelerationX();		// Gets motion in g
 		float readAccelerationY();
 		float readAccelerationZ();
 		float readTemperatureAccelerometer();	// Gets temperature in degrees C of accelerometer
 
+		static void addAcceleration();
+		void addAccelerationToMessage();
+		static void sendAcceleration();
+
+		void delayUntilShake();
+		void delayUntilFall();
+		void delayUntilFreeFall();
+
+		void sendAccelerationOnShake();
+		void sendAccelerationOnFall();
+		void sendAccelerationOnFreeFall();
+		
 		// --- Sleep ---
 		void sleep(uint32_t d);
 		static void _isrWdt(); 
@@ -117,8 +131,8 @@ class DramcoUno {
 		static unsigned long _wdtEnableForSleep(const unsigned long maxWaitTimeMillis);	
 		static void _wdtEnableInterrupt();
 	private:
-		void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
-		void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
+		static void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
+		static void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
 };
 
 #endif//__Dramco_UNO
