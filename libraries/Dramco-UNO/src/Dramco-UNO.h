@@ -96,7 +96,7 @@ class DramcoUno {
 		static void error(uint8_t errorcode);
 
 		// --- Message ---
-		static void send();					// Made blocking
+		void send();					// Made blocking
 		void sendWithOS();				// Only with OS loop
 		void clearMessage();
 
@@ -124,9 +124,9 @@ class DramcoUno {
 		float readAccelerationZ();
 		float readTemperatureAccelerometer();	// Gets temperature in degrees C of accelerometer
 
-		static void addAcceleration();
+		void addAcceleration();
 		void addAccelerationToMessage();
-		static void sendAcceleration();
+		void sendAcceleration();
 
 		void delayUntilShake();
 		void delayUntilFall();
@@ -134,15 +134,9 @@ class DramcoUno {
 		void delayUntilMotion();
 		void delayUntilMovement();
 
-		void sendAccelerationOnShake();
-		void sendAccelerationOnFall();
-		void sendAccelerationOnFreeFall();
-		void sendAccelerationOnMotion();
-		void sendAccelerationOnMovement();
-
 		// - Button
 		void delayUntilButtonPress();
-		void sendAccelerationOnButtonPress();
+		
 
 		// --- Sleep ---
 		void sleep(uint32_t d);
