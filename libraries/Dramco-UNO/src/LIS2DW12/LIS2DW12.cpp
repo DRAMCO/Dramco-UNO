@@ -678,8 +678,8 @@ uint8_t LIS2DW12::initWakeUp( ) {
 	// //Now, write the patched together data
 	errorAccumulator += writeRegister(LIS2DW12_CTRL4_INT1_PAD_CTRL, dataToWrite);
 	
-	writeRegister(LIS2DW12_WAKE_UP_THS, 0x04);
-	writeRegister(LIS2DW12_WAKE_UP_DUR, 0x02);
+	writeRegister(LIS2DW12_WAKE_UP_THS, settings_wakeTh);
+	writeRegister(LIS2DW12_WAKE_UP_DUR, settings_wakeDur);
 
 	// Enable interrupts in CTRL7 rgister
 	dataToWrite = 0;  // Start fresh!

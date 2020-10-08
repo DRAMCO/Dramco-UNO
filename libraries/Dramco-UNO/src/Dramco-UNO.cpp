@@ -21,7 +21,8 @@ static volatile unsigned int _wdtSleepTimeMillis;
 static volatile unsigned long _millisInDeepSleep;
 
 static bool _keep3V3Active = false;
-static uint8_t _accelerometerIntAction = 0;
+static uint8_t _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_NONE;
+static uint8_t _buttonIntAction = DRAMCO_UNO_INT_ACTION_NONE;
 
 float _calibration = 1;
 
@@ -313,6 +314,9 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     pinMode(DRAMCO_UNO_ACCELEROMTER_INT_PIN, INPUT);
     digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
 
+    pinMode(DRAMCO_UNO_BUTTON_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_BUTTON_INT_PIN, HIGH);
+
     calibrateTemperature();
 }
 
@@ -556,7 +560,7 @@ void DramcoUno::sendAcceleration(){
 void DramcoUno::delayUntilShake(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_WAKE;
     pciInit(9);
     _accelerometer.initDoubleTap(4);
     sleep(-1);
@@ -565,7 +569,7 @@ void DramcoUno::delayUntilShake(){
 void DramcoUno::delayUntilFall(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_WAKE;
     pciInit(9);
     _accelerometer.initFreefall();
     sleep(-1);
@@ -574,7 +578,7 @@ void DramcoUno::delayUntilFall(){
 void DramcoUno::delayUntilMotion(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_WAKE;
     pciInit(9);
     _accelerometer.initWakeUp();
     sleep(-1);
@@ -592,7 +596,7 @@ void DramcoUno::delayUntilFreeFall(){
 void DramcoUno::sendAccelerationOnShake(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_SEND_ACC;
     pciInit(9);
     _accelerometer.initDoubleTap(4);
 }
@@ -600,7 +604,7 @@ void DramcoUno::sendAccelerationOnShake(){
 void DramcoUno::sendAccelerationOnFall(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_SEND_ACC;
     pciInit(9);
     _accelerometer.initFreefall();
 }
@@ -612,7 +616,7 @@ void DramcoUno::sendAccelerationOnFreeFall(){
 void DramcoUno::sendAccelerationOnMotion(){
     _accelerometer.begin();
     _keep3V3Active = true;
-    _accelerometerIntAction = DRAMCO_UNO_ACCLEROMETER_ACTION_SEND;
+    _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_SEND_ACC;
     pciInit(9);
     _accelerometer.initWakeUp();
 }
@@ -622,6 +626,16 @@ void DramcoUno::sendAccelerationOnMovement(){
 }
 
 // - Button
+void DramcoUno::delayUntilButtonPress(){
+    _buttonIntAction = DRAMCO_UNO_INT_ACTION_WAKE;
+    pciInit(10);
+    sleep(-1);
+}
+
+void DramcoUno::sendAccelerationOnButtonPress(){
+    _buttonIntAction = DRAMCO_UNO_INT_ACTION_SEND_ACC;
+    pciInit(10);
+}
 
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
@@ -729,13 +743,29 @@ ISR (WDT_vect) {
 }
 
 ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here  
-    if (!(DRAMCO_UNO_ACCELEROMTER_INT_PORT & _BV(DRAMCO_UNO_ACCELEROMTER_INT_NAME))){ // If pin 9 is low
-        DramcoUno::blink();
-        if(_accelerometerIntAction == DRAMCO_UNO_ACCLEROMETER_ACTION_SEND)
-            DramcoUno::sendAcceleration();
-        pciDeinit();
-        _millisInDeepSleep = -1; // Stop WDT sleep
-        _keep3V3Active = false; // Accelerometer can shut up now
+    if(_accelerometerIntAction != DRAMCO_UNO_INT_ACTION_NONE){
+        if (!(DRAMCO_UNO_ACCELEROMTER_INT_PORT & _BV(DRAMCO_UNO_ACCELEROMTER_INT_NAME))){ // If pin 9 is low
+            DramcoUno::blink();
+            if(_accelerometerIntAction == DRAMCO_UNO_INT_ACTION_SEND_ACC)
+                DramcoUno::sendAcceleration();
+            pciDeinit();
+            _millisInDeepSleep = -1; // Stop WDT sleep
+            _keep3V3Active = false; // Accelerometer can shut up now
+            _accelerometerIntAction = DRAMCO_UNO_INT_ACTION_NONE;
+        }
+    }
+    if(_buttonIntAction != DRAMCO_UNO_INT_ACTION_NONE){
+        if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
+            delay(100);
+            if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
+                DramcoUno::blink();
+                if(_buttonIntAction == DRAMCO_UNO_INT_ACTION_SEND_ACC)
+                    DramcoUno::sendAcceleration();
+                pciDeinit();
+                _millisInDeepSleep = -1; // Stop WDT sleep
+                _buttonIntAction = DRAMCO_UNO_INT_ACTION_NONE;
+            }
+        }
     }
     
 }

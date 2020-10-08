@@ -49,7 +49,9 @@
 #define DRAMCO_UNO_ACCELEROMTER_INT_NAME PINB1
 #define DRAMCO_UNO_ACCELEROMTER_INT_PORT PINB
 
-#define DRAMCO_UNO_BUTTON_PIN 10
+#define DRAMCO_UNO_BUTTON_INT_PIN 10
+#define DRAMCO_UNO_BUTTON_INT_NAME PINB2
+#define DRAMCO_UNO_BUTTON_INT_PORT PINB
 
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
@@ -73,8 +75,14 @@
 #define DRAMCO_UNO_LPP_TEMPERATURE_MULT            10
 #define DRAMCO_UNO_LPP_ACCELEROMETER_MULT          1000
 
-#define DRAMCO_UNO_ACCLEROMETER_ACTION_WAKE		   1
-#define DRAMCO_UNO_ACCLEROMETER_ACTION_SEND		   2
+#define DRAMCO_UNO_INT__NONE			   0
+#define DRAMCO_UNO_INT__ACCELEROMETER		   	   1
+#define DRAMCO_UNO_INT__BUTTON		   	   1
+
+#define DRAMCO_UNO_INT_ACTION_NONE			   0
+#define DRAMCO_UNO_INT_ACTION_WAKE		   	   1
+#define DRAMCO_UNO_INT_ACTION_SEND_ACC		   2
+
 typedef const char * LoraParam;
 
 class DramcoUno {
@@ -131,7 +139,11 @@ class DramcoUno {
 		void sendAccelerationOnFreeFall();
 		void sendAccelerationOnMotion();
 		void sendAccelerationOnMovement();
-		
+
+		// - Button
+		void delayUntilButtonPress();
+		void sendAccelerationOnButtonPress();
+
 		// --- Sleep ---
 		void sleep(uint32_t d);
 		static void _isrWdt(); 

@@ -33,6 +33,8 @@ Distributed as-is; no warranty is given.
 #define settings_quiet 0x08		// quiet time window for double tap detection ((0x08 >> 2) * 4 / ODR)
 #define settings_shock 0x02 	// shock time window for double tap detection (0x02 * 8 / ODR)
 #define settings_tapTh 0x0C 	// threshold for tap detection
+#define settings_wakeDur 0x03 	// shock time window for double tap detection (0x02 * 8 / ODR)
+#define settings_wakeTh 0x04 	// threshold for tap detection
 #define settings_lowNoise 1		// 1 = low noise enabled
 #define settings_fs	2			// 2g, 4g, 8g, 16g
 #define settings_hiActive 1		// 0 = active high, 1 = active low
