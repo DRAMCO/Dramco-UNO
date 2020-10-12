@@ -9,7 +9,7 @@
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 
-#include <Wire.h>
+#include "Wire/Wire.h"
 #include "Deepsleep/DeepSleep_avr_definition.h"
 
 #include "LIS2DW12/LIS2DW12.h"
@@ -53,6 +53,9 @@
 #define DRAMCO_UNO_BUTTON_INT_NAME PINB2
 #define DRAMCO_UNO_BUTTON_INT_PORT PINB
 
+#define DRAMCO_UNO_SOIL_PIN A3
+#define DRAMCO_UNO_SOIL_DIVIDER 300.0 // 3000 = max value *100 (percent)
+
 // Low power payload constants
 #define DRAMCO_UNO_LPP_DIGITAL_INPUT               0     // 1 byte
 #define DRAMCO_UNO_LPP_ANALOG_INPUT                2     // 2 bytes, 0.01 signed
@@ -84,6 +87,8 @@
 #define DRAMCO_UNO_INT_ACTION_SEND_ACC		   2
 
 typedef const char * LoraParam;
+
+#define DEBUG
 
 class DramcoUno {
 	public:
@@ -136,6 +141,9 @@ class DramcoUno {
 
 		// - Button
 		void delayUntilButtonPress();
+
+		// - Soil moisture
+		float readSoil();
 		
 
 		// --- Sleep ---

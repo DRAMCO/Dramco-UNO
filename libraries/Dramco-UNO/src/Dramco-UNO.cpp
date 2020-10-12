@@ -317,6 +317,9 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     pinMode(DRAMCO_UNO_BUTTON_INT_PIN, INPUT);
     digitalWrite(DRAMCO_UNO_BUTTON_INT_PIN, HIGH);
 
+    //pinMode(DRAMCO_UNO_SOIL_PIN, OUTPUT);
+    //digitalWrite(DRAMCO_UNO_SOIL_PIN, LOW);
+    
     calibrateTemperature();
 }
 
@@ -512,22 +515,27 @@ void DramcoUno::addLuminosityToMessage(float luminosity){
 
 // - Acceleration
 float DramcoUno::readAccelerationX(){
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelX();
 }
 
 float DramcoUno::readAccelerationY(){
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelY();
 }
 
 float DramcoUno::readAccelerationZ(){
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelZ();
 }
 
 float DramcoUno::readTemperatureAccelerometer(){
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
+    Serial.println("acc begin end");
     return _accelerometer.readTempC();
 }
 
@@ -599,6 +607,22 @@ void DramcoUno::delayUntilButtonPress(){
     _buttonIntEnabled = true;
     pciInit(10);
     sleep(-1);
+}
+
+// - Soil Moisture
+float DramcoUno::readSoil(){
+    /*digitalWrite(DRAMCO_UNO_SOIL_PIN, HIGH);
+    byte ADCSRAoriginal = ADCSRA; 
+    ADCSRA = (ADCSRA & B11111000) | 4; 
+    int i = 0;
+    while(analogRead(A2)<1000){ // Read until analog value at 1000, count cycles
+        i++;
+    }
+    ADCSRA = ADCSRAoriginal;
+    digitalWrite(DRAMCO_UNO_SOIL_PIN, LOW);
+
+    return (float) i/DRAMCO_UNO_SOIL_DIVIDER;*/
+    return 0;
 }
 
 // --- Sleep ---

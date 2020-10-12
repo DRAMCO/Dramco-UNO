@@ -26,7 +26,7 @@ Distributed as-is; no warranty is given.
 #include "LIS2DW12.h"
 #include "stdint.h"
 #include "Arduino.h"
-#include "Wire.h"
+#include "Wire/Wire.h"
 
 //****************************************************************************//
 //
@@ -208,6 +208,8 @@ LIS2DW12::LIS2DW12(void ) {
 //
 //****************************************************************************//
 status_t LIS2DW12::begin(){
+	 Wire.setTimeout( 3000 );
+
 	//Check the settings structure values to determine how to setup the device
 	uint8_t dataToWrite = 0;  //Temporary variable
 
