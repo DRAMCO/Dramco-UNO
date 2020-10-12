@@ -621,9 +621,11 @@ float DramcoUno::readSoilMoisture(){
     }
     ADCSRA = ADCSRAoriginal;
     digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
-
+    delay(500); // cap discharge delay
+    
 
     float value = (float(i)) / DRAMCO_UNO_SOIL_DIVIDER;
+
 
     if (value > 100)
         return 100;
