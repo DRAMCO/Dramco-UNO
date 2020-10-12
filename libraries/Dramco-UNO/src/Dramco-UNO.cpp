@@ -317,8 +317,8 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     pinMode(DRAMCO_UNO_BUTTON_INT_PIN, INPUT);
     digitalWrite(DRAMCO_UNO_BUTTON_INT_PIN, HIGH);
 
-    //pinMode(DRAMCO_UNO_SOIL_PIN, OUTPUT);
-    //digitalWrite(DRAMCO_UNO_SOIL_PIN, LOW);
+    pinMode(DRAMCO_UNO_SOIL_PIN_EN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
     
     calibrateTemperature();
 }
@@ -347,6 +347,7 @@ void DramcoUno::loop(){
 }
 
 void DramcoUno::delay(uint32_t d){
+    Serial.flush();
     if(!packetReadyForTransmission)
         DramcoUno::_sleep(d);
     else{
@@ -610,19 +611,28 @@ void DramcoUno::delayUntilButtonPress(){
 }
 
 // - Soil Moisture
-float DramcoUno::readSoil(){
-    /*digitalWrite(DRAMCO_UNO_SOIL_PIN, HIGH);
+float DramcoUno::readSoilMoisture(){
+    digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, HIGH);
     byte ADCSRAoriginal = ADCSRA; 
     ADCSRA = (ADCSRA & B11111000) | 4; 
-    int i = 0;
-    while(analogRead(A2)<1000){ // Read until analog value at 1000, count cycles
+    float i = 0;
+    while(analogRead(DRAMCO_UNO_SOIL_PIN_ANALOG) < 1000 && i < 20000){ // Read until analog value at 1000, count cycles
         i++;
     }
     ADCSRA = ADCSRAoriginal;
-    digitalWrite(DRAMCO_UNO_SOIL_PIN, LOW);
+    digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
 
-    return (float) i/DRAMCO_UNO_SOIL_DIVIDER;*/
-    return 0;
+
+    float value = (float(i)) / DRAMCO_UNO_SOIL_DIVIDER;
+
+    if (value > 100)
+        return 100;
+    else
+        return value;
+}
+
+float DramcoUno::readSoil(){
+    return readSoilMoisture();
 }
 
 // --- Sleep ---

@@ -26,7 +26,7 @@ Distributed as-is; no warranty is given.
 #include "LIS2DW12.h"
 #include "stdint.h"
 #include "Arduino.h"
-#include "Wire/Wire.h"
+#include "../Wire/Wire.h"
 
 //****************************************************************************//
 //
