@@ -116,7 +116,7 @@ void onEvent (ev_t ev) {
             #endif
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
-	    // size, we don't use it in this example.
+	        // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
         /*
@@ -152,7 +152,7 @@ void onEvent (ev_t ev) {
             #endif
             packetReadyForTransmission = false; 
             // Schedule next transmission
-            //os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+            // os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
        		#ifdef DEBUG
