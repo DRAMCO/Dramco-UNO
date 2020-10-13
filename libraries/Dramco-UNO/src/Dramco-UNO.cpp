@@ -637,6 +637,34 @@ float DramcoUno::readSoil(){
     return readSoilMoisture();
 }
 
+void DramcoUno::addSoilMoisture(float soilMoisture){
+    _lppAddToBuffer(soilMoisture, 0, DRAMCO_UNO_LPP_ANALOG_INPUT, DRAMCO_UNO_LPP_ANALOG_INPUT_SIZE, DRAMCO_UNO_LPP_ANALOG_INPUT_MULT);
+}
+
+void DramcoUno::addSoilMoisture(){
+    addSoilMoisture(readSoilMoisture());
+}
+
+void DramcoUno::addSoil(float soilMoisture){
+    addSoilMoisture(soilMoisture);
+}
+
+void DramcoUno::addSoil(){
+    addSoilMoisture();
+}
+
+void DramcoUno::sendSoilMoisture(){
+    _cursor = 0;
+    memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
+    addSoilMoisture();
+    send();
+}
+
+void DramcoUno::sendSoil(){
+    sendSoilMoisture();
+}
+
+
 // --- Sleep ---
 void DramcoUno::sleep(uint32_t d){
     #ifdef DEBUG
