@@ -672,11 +672,13 @@ void DramcoUno::sleep(uint32_t d){
 }
 
 void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
-
-    if(!_keep3V3Active)
+    
+    if(!_keep3V3Active){
         digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
+        digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, LOW);
+    }
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
-    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, LOW);
+    
     pinMode(1, OUTPUT);
     digitalWrite(1, LOW);
 
@@ -705,7 +707,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
             UCSR0B = 0x00;
             UCSR0C = 0x00;
         }
-        
+
         // turn off brown-out in software
         #if defined(BODS) && defined(BODSE)
         sleep_bod_disable();
@@ -725,6 +727,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     #ifdef DEBUG
     Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
     #endif
+    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 }
 
