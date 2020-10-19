@@ -1,5 +1,6 @@
 #include <Dramco-UNO.h>
 
+
 // ------------------------ LMIC STUFF ------------------------
 const lmic_pinmap lmic_pins = {
   .nss = DRAMCO_UNO_LMIC_NSS_PIN,
@@ -46,12 +47,14 @@ void os_getDevKey (u1_t* buf) {  // no reverse here
 	memcpy(buf, _appkey, 16);
 } 
 
+#ifdef DEBUG
 void printHex2(unsigned v) {
     v &= 0xff;
     if (v < 16)
         Serial.print('0');
     Serial.print(v, HEX);
 }
+#endif 
 
 void onEvent (ev_t ev) {
 	#ifdef DEBUG
@@ -131,13 +134,13 @@ void onEvent (ev_t ev) {
         	#ifdef DEBUG
             Serial.println(F("EV_JOIN_FAILED"));
             #endif
-            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
+            error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_REJOIN_FAILED:
         	#ifdef DEBUG
             Serial.println(F("EV_REJOIN_FAILED"));
             #endif
-            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
+            error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_TXCOMPLETE:
         	#ifdef DEBUG
@@ -205,7 +208,7 @@ void onEvent (ev_t ev) {
         	#ifdef DEBUG
             Serial.println(F("EV_JOIN_TXCOMPLETE: no JoinAccept"));
             #endif
-            DramcoUno::error(DRAMCO_UNO_ERROR_LORA_JOIN);
+            error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
 
         default:
@@ -330,18 +333,6 @@ void DramcoUno::blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
 }
 
-void DramcoUno::error(uint8_t errorcode){
-    while(true){
-        for(byte i = 0; i < errorcode; i++){
-            digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
-            _sleep(100);
-            digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
-            _sleep(500);
-        }
-        _sleep(2000);
-    }
-}
-
 void DramcoUno::loop(){
     os_runloop_once();
 }
@@ -454,8 +445,10 @@ float DramcoUno::readTemperature(){
 
 void DramcoUno::addTemperature(){
     float temp = readTemperature();
+    #ifdef DEBUG
     Serial.println(temp);
     addTemperature(temp);
+    #endif
 }
 
 void DramcoUno::addTemperature(float temperature){
@@ -536,7 +529,9 @@ float DramcoUno::readAccelerationZ(){
 float DramcoUno::readTemperatureAccelerometer(){
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
+    #ifdef DEBUG
     Serial.println("acc begin end");
+    #endif
     return _accelerometer.readTempC();
 }
 
@@ -545,12 +540,14 @@ void DramcoUno::addAcceleration(){
     float x = _accelerometer.readFloatAccelX();
     float y = _accelerometer.readFloatAccelY();
     float z = _accelerometer.readFloatAccelZ();
+    #ifdef DEBUG
     Serial.print("x: ");
     Serial.println(x);
     Serial.print("y: ");
     Serial.println(y);
     Serial.print("z: ");
     Serial.println(z);
+    #endif
     _lppAddAcceleration(0, x, y, z);
 }
 
@@ -782,7 +779,7 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
     }
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
-            delay(100);
+            delay(50);
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
                 DramcoUno::blink();
                 pciDeinit();
@@ -792,4 +789,16 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
         }
     }
     
+}
+
+void error(uint8_t errorcode){
+    while(true){
+        for(byte i = 0; i < errorcode; i++){
+            digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
+            delay(100);
+            digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
+            delay(100);
+        }
+        delay(500);
+    }
 }

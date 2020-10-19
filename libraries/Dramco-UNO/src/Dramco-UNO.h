@@ -22,7 +22,7 @@
 
 #define DRAMCO_UNO_3V3_ENABLE_PIN 				  8
 
-
+#define DRAMCO_UNO_ERROR_ACC	 				  2
 #define DRAMCO_UNO_ERROR_LORA_JOIN 				  3
 #define DRAMCO_UNO_ERROR_BUFFER 				  4
 
@@ -90,6 +90,8 @@
 #define DRAMCO_UNO_INT_ACTION_WAKE		   	       1
 #define DRAMCO_UNO_INT_ACTION_SEND_ACC		       2
 
+#define DEBUG 
+
 typedef const char * LoraParam;
 
 class DramcoUno {
@@ -100,7 +102,6 @@ class DramcoUno {
 		void loop();
 		void delay(uint32_t d);
 		static void blink();
-		static void error(uint8_t errorcode);
 
 		// --- Message ---
 		void send();					// Made blocking
@@ -164,5 +165,8 @@ class DramcoUno {
 		static void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 		static void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
 };
+
+void error(uint8_t errorcode);
+
 
 #endif//__Dramco_UNO

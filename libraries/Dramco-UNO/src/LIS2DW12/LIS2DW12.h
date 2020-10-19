@@ -45,7 +45,11 @@ Distributed as-is; no warranty is given.
 #define settings_csPuDisc 1		// 0 = pull-up connected to CS pin
 #define settings_i2cDisable 0	// 0 = i2c enable, 1 = i2c disable
 
+#define I2C_TIMEOUT 3000
 #define I2C_MODE 0
+
+
+
 // Return values 
 typedef enum
 {

@@ -45,7 +45,7 @@ Distributed as-is; no warranty is given.
 //
 //****************************************************************************//
 
-
+void error(uint8_t errorcode); // Prototype of error function
 
 LIS2DW12Core::LIS2DW12Core(void){
 
@@ -102,15 +102,20 @@ status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offse
 	else{//OK, all worked, keep going
 		// request 6 bytes from slave device
 		Wire.requestFrom((uint8_t)I2CAddress, (uint8_t)length);
-		while ( (Wire.available()) && (i < length))  // slave may send less than requested
+		unsigned long startMillis = millis();
+		while ( (Wire.available()) && (i < length) && millis() - startMillis < I2C_TIMEOUT)  // slave may send less than requested
 		{
 			c = Wire.read(); // receive a byte as character
 			*outputPointer = c;
 			outputPointer++;
 			i++;
 		}
+		if (i==0){
+			Serial.println("error");
+			error(2);
+		}
 	}
-	
+
 	return returnError;
 }
 
@@ -125,7 +130,7 @@ status_t LIS2DW12Core::readRegisterRegion(uint8_t *outputPointer , uint8_t offse
 //****************************************************************************//
 status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 	//Return value
-	uint8_t result;
+	uint8_t result =0;
 	uint8_t numBytes = 1;
 	status_t returnError = IMU_SUCCESS;
 
@@ -135,8 +140,13 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 		returnError = IMU_HW_ERROR;
 	}
 	Wire.requestFrom(I2CAddress, numBytes);
-	while ( Wire.available() ){ // slave may send less than requested
+	unsigned long startMillis = millis();
+	while ( Wire.available() && millis() - startMillis < I2C_TIMEOUT){ // slave may send less than requested
 		result = Wire.read(); // receive a byte as a proper uint8_t
+	}
+	if(result == 0){
+		Serial.println("error");
+		error(2);
 	}
 	
 	*outputPointer = result;
@@ -208,7 +218,7 @@ LIS2DW12::LIS2DW12(void ) {
 //
 //****************************************************************************//
 status_t LIS2DW12::begin(){
-	 Wire.setTimeout( 3000 );
+	 Wire.setTimeout( 1000 );
 
 	//Check the settings structure values to determine how to setup the device
 	uint8_t dataToWrite = 0;  //Temporary variable
