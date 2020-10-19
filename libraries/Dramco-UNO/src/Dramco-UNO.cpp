@@ -251,7 +251,7 @@ void pciDeinit(){
 void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
     #ifdef DEBUG
-    Serial.begin(115200);
+    Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
     Serial.println("Started");
     #endif
 
@@ -275,7 +275,7 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 		tempStr[1] = *(appkey+(i*2)+1);
 		*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
 	}
-
+    
 	pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
@@ -283,7 +283,7 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
 
     pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
-
+    
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
@@ -666,6 +666,7 @@ void DramcoUno::sendSoil(){
 void DramcoUno::sleep(uint32_t d){
     #ifdef DEBUG
     Serial.flush();
+    Serial.end();
     #endif
     DramcoUno::_sleep(d);
 }
@@ -675,6 +676,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     if(!_keep3V3Active)
         digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
+    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, LOW);
     pinMode(1, OUTPUT);
     digitalWrite(1, LOW);
 
@@ -686,6 +688,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     // but continue execution immediatelly.
 
     byte adcsraSave = ADCSRA;
+
     _millisInDeepSleep = 0;
     while( _millisInDeepSleep <= maxWaitTimeMillis-1){ // -1 for enabling to stop sleeping
         sleep_enable(); // enables the sleep bit, a safety pin
@@ -697,6 +700,12 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
         set_sleep_mode(SLEEP_MODE);
         
         ADCSRA = 0;  // disable ADC
+        if(maxWaitTimeMillis > 10000 && !_keep3V3Active){
+            UCSR0A = 0x00; 
+            UCSR0B = 0x00;
+            UCSR0C = 0x00;
+        }
+        
         // turn off brown-out in software
         #if defined(BODS) && defined(BODSE)
         sleep_bod_disable();
@@ -706,14 +715,16 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
         
         // THE PROGRAM CONTINUES FROM HERE AFTER WAKING UP
     }
-    if (adcsraSave != 0) {
-      // re-enable ADC
-      ADCSRA = adcsraSave;
-    }
+    // re-enable ADC
+    ADCSRA = adcsraSave;
+    
     sleep_disable();
     wdt_reset();
     wdt_disable();
 
+    #ifdef DEBUG
+    Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
+    #endif
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 }
 

@@ -37,7 +37,7 @@
 #define DRAMCO_UNO_LORA_KEY_SIZE  				   16
 
 #define DRAMCO_UNO_BUFFER_SIZE 					   20 // Should be enough for temp, lumin, accelerometer and soil moisture
-
+#define DRAMCO_UNO_SERIAL_BAUDRATE			       115200
 // Sensor constants
 #define DRAMCO_UNO_LIGHT_SENSOR_PIN 			   A0
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN   7
@@ -90,7 +90,7 @@
 #define DRAMCO_UNO_INT_ACTION_WAKE		   	       1
 #define DRAMCO_UNO_INT_ACTION_SEND_ACC		       2
 
-#define DEBUG 
+#define DEBUG
 
 typedef const char * LoraParam;
 
