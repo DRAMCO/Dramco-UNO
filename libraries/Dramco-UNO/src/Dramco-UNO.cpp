@@ -432,7 +432,7 @@ float DramcoUnoClass::readTemperature(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _keep3V3Active = true;
-    delay(300); // Wait for voltage to stabilize
+    sleep(300); // Wait for voltage to stabilize
     _keep3V3Active = false;
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
         float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
@@ -618,7 +618,7 @@ float DramcoUnoClass::readSoilMoisture(){
     }
     ADCSRA = ADCSRAoriginal;
     digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
-    delay(500); // cap discharge delay
+    sleep(500); // cap discharge delay
     
 
     float value = (float(i)) / DRAMCO_UNO_SOIL_DIVIDER;
@@ -793,7 +793,7 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
     }
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
-            delay(50);
+            sleep(50);
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
                 DramcoUnoClass::blink();
                 pciDeinit();
@@ -809,10 +809,10 @@ void error(uint8_t errorcode){
     while(true){
         for(byte i = 0; i < errorcode; i++){
             digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
-            delay(100);
+            sleep(100);
             digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
-            delay(100);
+            sleep(100);
         }
-        delay(500);
+        sleep(500);
     }
 }
