@@ -90,7 +90,7 @@
 #define DRAMCO_UNO_INT_ACTION_WAKE		   	       1
 #define DRAMCO_UNO_INT_ACTION_SEND_ACC		       2
 
-#define DEBUG
+//#define DEBUG
 
 
 typedef const char * LoraParam;
