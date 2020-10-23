@@ -248,7 +248,7 @@ void pciDeinit(){
 }
 
 // ------------------------ DRAMCO UNO LIB ------------------------
-void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
+void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
     #ifdef DEBUG
     Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
@@ -327,20 +327,20 @@ void DramcoUno::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 }
 
 // --- General UTILs ---
-void DramcoUno::blink(){
+void DramcoUnoClass::blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
     _sleep(100);
     digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
 }
 
-void DramcoUno::loop(){
+void DramcoUnoClass::loop(){
     os_runloop_once();
 }
 
-void DramcoUno::delay(uint32_t d){
+void DramcoUnoClass::delay(uint32_t d){
     Serial.flush();
     if(!packetReadyForTransmission)
-        DramcoUno::_sleep(d);
+        DramcoUnoClass::_sleep(d);
     else{
         unsigned long startMillis = millis();
         while (millis() - startMillis < d) {
@@ -350,12 +350,12 @@ void DramcoUno::delay(uint32_t d){
 }
 
 // --- Message related things ---
-void DramcoUno::sendWithOS(){
+void DramcoUnoClass::sendWithOS(){
     do_send(&sendjob);
     //! Clear message yourself after transmit with board.clearMessage()
 }
 
-void DramcoUno::send(){
+void DramcoUnoClass::send(){
     do_send(&sendjob);
     while(packetReadyForTransmission){ // This makes it blocking
         os_runloop_once();
@@ -365,12 +365,12 @@ void DramcoUno::send(){
     // TODO: duty cycle limit
 }
 
-void DramcoUno::clearMessage(){
+void DramcoUnoClass::clearMessage(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
 }
 
-void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
+void DramcoUnoClass::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult){
     // check buffer overflow
     if ((_cursor + size + 2) > DRAMCO_UNO_BUFFER_SIZE) {
         error(DRAMCO_UNO_ERROR_BUFFER);
@@ -398,7 +398,7 @@ void DramcoUno::_lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_
     _cursor += size;
 }
 
-void DramcoUno::_lppAddAcceleration(uint8_t channel, float x, float y, float z) {
+void DramcoUnoClass::_lppAddAcceleration(uint8_t channel, float x, float y, float z) {
     // check buffer overflow
     if ((_cursor + DRAMCO_UNO_LPP_ACCELEROMETER_SIZE + 2) > DRAMCO_UNO_BUFFER_SIZE) {
         error(DRAMCO_UNO_ERROR_BUFFER);
@@ -422,11 +422,11 @@ void DramcoUno::_lppAddAcceleration(uint8_t channel, float x, float y, float z) 
 // --- Sensor readings ---
 
 // - Temperature 
-void DramcoUno::calibrateTemperature(){
+void DramcoUnoClass::calibrateTemperature(){
     _calibration = readTemperatureAccelerometer()/readTemperature();
 }
 
-float DramcoUno::readTemperature(){
+float DramcoUnoClass::readTemperature(){
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     float average=0;
     analogReference(EXTERNAL);
@@ -443,7 +443,7 @@ float DramcoUno::readTemperature(){
     return average*_calibration;
 }
 
-void DramcoUno::addTemperature(){
+void DramcoUnoClass::addTemperature(){
     float temp = readTemperature();
     #ifdef DEBUG
     Serial.println(temp);
@@ -451,19 +451,19 @@ void DramcoUno::addTemperature(){
     #endif
 }
 
-void DramcoUno::addTemperature(float temperature){
+void DramcoUnoClass::addTemperature(float temperature){
     _lppAddToBuffer(temperature, 0, DRAMCO_UNO_LPP_TEMPERATURE, DRAMCO_UNO_LPP_TEMPERATURE_SIZE, DRAMCO_UNO_LPP_TEMPERATURE_MULT);
 }
 
-void DramcoUno::addTemperatureToMessage(){
+void DramcoUnoClass::addTemperatureToMessage(){
     addTemperature();
 }
 
-void DramcoUno::addTemperatureToMessage(float temperature){
+void DramcoUnoClass::addTemperatureToMessage(float temperature){
     addTemperature(temperature);
 }
 
-void DramcoUno::sendTemperature(){
+void DramcoUnoClass::sendTemperature(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
 
@@ -473,7 +473,7 @@ void DramcoUno::sendTemperature(){
 
 
 // - Luminosity
-float DramcoUno::readLuminosity(){
+float DramcoUnoClass::readLuminosity(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; // max light value = 160, *100
@@ -483,7 +483,7 @@ float DramcoUno::readLuminosity(){
         return 100.0;
 }
 
-void DramcoUno::sendLuminosity(){
+void DramcoUnoClass::sendLuminosity(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
 
@@ -491,42 +491,42 @@ void DramcoUno::sendLuminosity(){
     send();
 }
 
-void DramcoUno::addLuminosity(){
+void DramcoUnoClass::addLuminosity(){
     addLuminosity(readLuminosity());
 }
 
-void DramcoUno::addLuminosity(float luminosity){
+void DramcoUnoClass::addLuminosity(float luminosity){
     _lppAddToBuffer(luminosity, 0, DRAMCO_UNO_LPP_LUMINOSITY, DRAMCO_UNO_LPP_LUMINOSITY_SIZE, DRAMCO_UNO_LPP_LUMINOSITY_MULT);
 }
 
-void DramcoUno::addLuminosityToMessage(){
+void DramcoUnoClass::addLuminosityToMessage(){
     addLuminosity();
 }
 
-void DramcoUno::addLuminosityToMessage(float luminosity){
+void DramcoUnoClass::addLuminosityToMessage(float luminosity){
     addLuminosity(luminosity);
 }
 
 // - Acceleration
-float DramcoUno::readAccelerationX(){
+float DramcoUnoClass::readAccelerationX(){
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelX();
 }
 
-float DramcoUno::readAccelerationY(){
+float DramcoUnoClass::readAccelerationY(){
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelY();
 }
 
-float DramcoUno::readAccelerationZ(){
+float DramcoUnoClass::readAccelerationZ(){
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     return _accelerometer.readFloatAccelZ();
 }
 
-float DramcoUno::readTemperatureAccelerometer(){
+float DramcoUnoClass::readTemperatureAccelerometer(){
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _accelerometer.begin();
     #ifdef DEBUG
@@ -535,7 +535,7 @@ float DramcoUno::readTemperatureAccelerometer(){
     return _accelerometer.readTempC();
 }
 
-void DramcoUno::addAcceleration(){
+void DramcoUnoClass::addAcceleration(){
     _accelerometer.begin();
     float x = _accelerometer.readFloatAccelX();
     float y = _accelerometer.readFloatAccelY();
@@ -551,19 +551,19 @@ void DramcoUno::addAcceleration(){
     _lppAddAcceleration(0, x, y, z);
 }
 
-void DramcoUno::addAccelerationToMessage(){
+void DramcoUnoClass::addAccelerationToMessage(){
     addAcceleration();
 }
 
-void DramcoUno::sendAcceleration(){
+void DramcoUnoClass::sendAcceleration(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
     
-    DramcoUno::addAcceleration();
-    DramcoUno::send();
+    DramcoUnoClass::addAcceleration();
+    DramcoUnoClass::send();
 }
 
-void DramcoUno::delayUntilShake(){
+void DramcoUnoClass::delayUntilShake(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -572,7 +572,7 @@ void DramcoUno::delayUntilShake(){
     sleep(-1);
 }
 
-void DramcoUno::delayUntilFall(){
+void DramcoUnoClass::delayUntilFall(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -581,7 +581,7 @@ void DramcoUno::delayUntilFall(){
     sleep(-1);
 }
 
-void DramcoUno::delayUntilMotion(){
+void DramcoUnoClass::delayUntilMotion(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -590,25 +590,25 @@ void DramcoUno::delayUntilMotion(){
     sleep(-1);
 }
 
-void DramcoUno::delayUntilMovement(){
+void DramcoUnoClass::delayUntilMovement(){
     delayUntilMovement();
 }
 
 
-void DramcoUno::delayUntilFreeFall(){
+void DramcoUnoClass::delayUntilFreeFall(){
     delayUntilFall();
 }
 
 
 // - Button
-void DramcoUno::delayUntilButtonPress(){
+void DramcoUnoClass::delayUntilButtonPress(){
     _buttonIntEnabled = true;
     pciInit(10);
     sleep(-1);
 }
 
 // - Soil Moisture
-float DramcoUno::readSoilMoisture(){
+float DramcoUnoClass::readSoilMoisture(){
     digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, HIGH);
     byte ADCSRAoriginal = ADCSRA; 
     ADCSRA = (ADCSRA & B11111000) | 4; 
@@ -630,48 +630,48 @@ float DramcoUno::readSoilMoisture(){
         return value;
 }
 
-float DramcoUno::readSoil(){
+float DramcoUnoClass::readSoil(){
     return readSoilMoisture();
 }
 
-void DramcoUno::addSoilMoisture(float soilMoisture){
+void DramcoUnoClass::addSoilMoisture(float soilMoisture){
     _lppAddToBuffer(soilMoisture, 0, DRAMCO_UNO_LPP_ANALOG_INPUT, DRAMCO_UNO_LPP_ANALOG_INPUT_SIZE, DRAMCO_UNO_LPP_ANALOG_INPUT_MULT);
 }
 
-void DramcoUno::addSoilMoisture(){
+void DramcoUnoClass::addSoilMoisture(){
     addSoilMoisture(readSoilMoisture());
 }
 
-void DramcoUno::addSoil(float soilMoisture){
+void DramcoUnoClass::addSoil(float soilMoisture){
     addSoilMoisture(soilMoisture);
 }
 
-void DramcoUno::addSoil(){
+void DramcoUnoClass::addSoil(){
     addSoilMoisture();
 }
 
-void DramcoUno::sendSoilMoisture(){
+void DramcoUnoClass::sendSoilMoisture(){
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
     addSoilMoisture();
     send();
 }
 
-void DramcoUno::sendSoil(){
+void DramcoUnoClass::sendSoil(){
     sendSoilMoisture();
 }
 
 
 // --- Sleep ---
-void DramcoUno::sleep(uint32_t d){
+void DramcoUnoClass::sleep(uint32_t d){
     #ifdef DEBUG
     Serial.flush();
     Serial.end();
     #endif
-    DramcoUno::_sleep(d);
+    DramcoUnoClass::_sleep(d);
 }
 
-void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
+void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     
     if(!_keep3V3Active){
         digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
@@ -695,8 +695,8 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     while( _millisInDeepSleep <= maxWaitTimeMillis-1){ // -1 for enabling to stop sleeping
         sleep_enable(); // enables the sleep bit, a safety pin
         
-        _wdtSleepTimeMillis = DramcoUno::_wdtEnableForSleep(maxWaitTimeMillis-_millisInDeepSleep);
-        DramcoUno::_wdtEnableInterrupt();
+        _wdtSleepTimeMillis = DramcoUnoClass::_wdtEnableForSleep(maxWaitTimeMillis-_millisInDeepSleep);
+        DramcoUnoClass::_wdtEnableInterrupt();
 
         noInterrupts();
         set_sleep_mode(SLEEP_MODE);
@@ -731,7 +731,7 @@ void DramcoUno::_sleep(unsigned long maxWaitTimeMillis) {
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 }
 
-unsigned long DramcoUno::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
+unsigned long DramcoUnoClass::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
     // From https://github.com/PRosenb/DeepSleepScheduler/blob/1595995576be62041a1c9db1d51435550ca49c53/DeepSleepScheduler_avr_implementation.h#L173
     unsigned long wdtSleepTimeMillis;
     if (maxWaitTimeMillis >= SLEEP_TIME_8S ) {
@@ -768,23 +768,23 @@ unsigned long DramcoUno::_wdtEnableForSleep(const unsigned long maxWaitTimeMilli
     return wdtSleepTimeMillis;
 }
 
-void DramcoUno::_isrWdt() {
+void DramcoUnoClass::_isrWdt() {
     sleep_disable();
     _millisInDeepSleep += _wdtSleepTimeMillis;
 }
 
-void DramcoUno::_wdtEnableInterrupt() { 
+void DramcoUnoClass::_wdtEnableInterrupt() { 
     WDTCSR |= (1 << WDCE) | (1 << WDIE);
 }
 
 ISR (WDT_vect) {
-    DramcoUno::_isrWdt();
+    DramcoUnoClass::_isrWdt();
 }
 
 ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here  
     if(_accelerometerIntEnabled){
         if (!(DRAMCO_UNO_ACCELEROMTER_INT_PORT & _BV(DRAMCO_UNO_ACCELEROMTER_INT_NAME))){ // If pin 9 is low
-            DramcoUno::blink();
+            DramcoUnoClass::blink();
             pciDeinit();
             _millisInDeepSleep = -1; // Stop WDT sleep
             _keep3V3Active = false; // Accelerometer can shut up now
@@ -795,7 +795,7 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
             delay(50);
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
-                DramcoUno::blink();
+                DramcoUnoClass::blink();
                 pciDeinit();
                 _millisInDeepSleep = -1; // Stop WDT sleep
                 _buttonIntEnabled = false;

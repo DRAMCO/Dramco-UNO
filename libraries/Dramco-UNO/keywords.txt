@@ -7,6 +7,12 @@
 #######################################
 LoraParam	KEYWORD1
 DramcoUno	KEYWORD1
+Board	KEYWORD1
+board	KEYWORD1
+DramcoUno	KEYWORD1
+Dramco_Uno	KEYWORD1
+DramcoUNO	KEYWORD1
+Dramco_UNO	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)

@@ -92,9 +92,10 @@
 
 #define DEBUG
 
+
 typedef const char * LoraParam;
 
-class DramcoUno {
+class DramcoUnoClass {
 	public:
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		
@@ -167,6 +168,16 @@ class DramcoUno {
 };
 
 void error(uint8_t errorcode);
+
+// External names
+extern DramcoUnoClass Board;
+
+// Adjust for capitalizing mistakes
+#define board (Board)
+#define DramcoUno (Board)
+#define Dramco_Uno (Board)
+#define DramcoUNO (Board)
+#define Dramco_UNO (Board)
 
 
 #endif//__Dramco_UNO
