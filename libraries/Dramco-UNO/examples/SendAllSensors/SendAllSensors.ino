@@ -12,6 +12,7 @@ void loop() {
     DramcoUno.blink();
     DramcoUno.addTemperature();
     DramcoUno.addLuminosity();
+    DramcoUno.addAcceleration();
     DramcoUno.send();
     DramcoUno.delay(60000);
 }
