@@ -447,8 +447,8 @@ void DramcoUnoClass::addTemperature(){
     float temp = readTemperature();
     #ifdef DEBUG
     Serial.println(temp);
-    addTemperature(temp);
     #endif
+    addTemperature(temp);
 }
 
 void DramcoUnoClass::addTemperature(float temperature){
@@ -793,7 +793,7 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
     }
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
-            sleep(50);
+            delay(50);
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
                 DramcoUnoClass::blink();
                 pciDeinit();
@@ -809,10 +809,10 @@ void error(uint8_t errorcode){
     while(true){
         for(byte i = 0; i < errorcode; i++){
             digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
-            sleep(100);
+            delay(100);
             digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
-            sleep(100);
+            delay(100);
         }
-        sleep(500);
+        delay(500);
     }
 }
