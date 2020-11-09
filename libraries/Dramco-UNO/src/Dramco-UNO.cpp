@@ -432,7 +432,7 @@ float DramcoUnoClass::readTemperature(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     _keep3V3Active = true;
-    sleep(300); // Wait for voltage to stabilize
+    sleep(500); // Wait for voltage to stabilize
     _keep3V3Active = false;
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
         float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
@@ -676,8 +676,9 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     if(!_keep3V3Active){
         digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, LOW);
         digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, LOW);
+        digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
     }
-    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
+    
     
     pinMode(1, OUTPUT);
     digitalWrite(1, LOW);
@@ -805,7 +806,10 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
     
 }
 
+void (*resetptr)( void ) = 0x0000;
+
 void error(uint8_t errorcode){
+    int i = 0;
     while(true){
         for(byte i = 0; i < errorcode; i++){
             digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
@@ -814,5 +818,10 @@ void error(uint8_t errorcode){
             delay(100);
         }
         delay(500);
+        i++;
+        if(i > 240){
+            resetptr();
+        }
     }
 }
+
