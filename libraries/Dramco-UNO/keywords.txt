@@ -19,7 +19,7 @@ Dramco_UNO	KEYWORD1
 #######################################
 loop	KEYWORD2
 delay	KEYWORD2
-blink 	KEYWORD2
+blink	KEYWORD2
 error	KEYWORD2
 
 send	KEYWORD2
@@ -41,24 +41,24 @@ readAccelerationX	KEYWORD2
 readAccelerationY	KEYWORD2
 readAccelerationZ	KEYWORD2
 readTemperatureAccelerometer	KEYWORD2
-addAcceleration KEYWORD2
-addAccelerationToMessage KEYWORD2
-sendAcceleration KEYWORD2
+addAcceleration	KEYWORD2
+addAccelerationToMessage	KEYWORD2
+sendAcceleration	KEYWORD2
 
-delayUntilShake KEYWORD2
-delayUntilFall KEYWORD2
-delayUntilFreeFall KEYWORD2
-delayUntilMotion KEYWORD2
-delayUtilMovement KEYWORD2
+delayUntilShake	KEYWORD2
+delayUntilFall	KEYWORD2
+delayUntilFreeFall	KEYWORD2
+delayUntilMotion	KEYWORD2
+delayUtilMovement	KEYWORD2
 
-delayUntilButtonPress KEYWORD2
+delayUntilButtonPress	KEYWORD2
 
-readSoilMoisture KEYWORD2
-readSoil KEYWORD2
-addSoilMoisture KEYWORD2
-addSoil KEYWORD2
-sendSoilMoisture KEYWORD2
-sendSoil KEYWORD2
+readSoilMoisture	KEYWORD2
+readSoil	KEYWORD2
+addSoilMoisture	KEYWORD2
+addSoil	KEYWORD2
+sendSoilMoisture	KEYWORD2
+sendSoil	KEYWORD2
 
 sleep	KEYWORD2
 
@@ -66,4 +66,4 @@ sleep	KEYWORD2
 # Constants (LITERAL1)
 #######################################
 
-
+LED_BUITIN	LITERAL1
