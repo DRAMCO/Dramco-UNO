@@ -21,7 +21,7 @@ dramcouno.bootloader.high_fuses=0xDE
 dramcouno.bootloader.extended_fuses=0xFE
 dramcouno.bootloader.unlock_bits=0x3F
 dramcouno.bootloader.lock_bits=0x0F
-dramcouno.bootloader.file=optiboot/optiboot/bootloaders/optiboot/optiboot_xplained328p.hex
+dramcouno.bootloader.file=dramco-uno/optiboot_dramco_uno.hex
 
 dramcouno.build.mcu=atmega328p
 dramcouno.build.f_cpu=16000000L
