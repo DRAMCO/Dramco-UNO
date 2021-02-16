@@ -35,6 +35,41 @@
          "tools":[
             
          ]
+      },
+     {
+         "name":"Dramco",
+         "maintainer":"Dramco",
+         "websiteURL":"http://dramco.be/iot",
+         "email":"uno@dramco.be",
+         "help":{
+            "online":"https://dramco.be/dramco-uno"
+         },
+         "platforms":[
+            {
+               "name":"Dramco UNO",
+               "architecture":"avr",
+               "version":"0.3",
+               "category":"Dramco",
+               "url":"https://github.com/DRAMCO/Dramco-UNO/releases/download/v0.3/Dramco-UNO-v0.3.zip",
+               "archiveFileName":"Dramco-UNO-v0.3.zip",
+               "checksum":"SHA-256:aca169e8abf44be165d8138ed13c38d2c3c26616f770f7ca241f2e3783cd013c",
+               "size":"235936",
+               "help":{
+                  "online":"https://dramco.be/dramco-uno"
+               },
+               "boards":[
+                  {
+                     "name":"Dramco Uno"
+                  }
+               ],
+               "toolsDependencies":[
+                  
+               ]
+            }
+         ],
+         "tools":[
+            
+         ]
       }
    ]
 }
