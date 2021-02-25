@@ -310,6 +310,8 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
 
 	// Set data rate and transmit power (note: txpow seems to be ignored by the library)
 	LMIC_setDrTxpow(DR_SF12, 14);
+	// Enable ADR
+	LMIC_setAdrMode(1);
 
     _cursor = 0;
 
