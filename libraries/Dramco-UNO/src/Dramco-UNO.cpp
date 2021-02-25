@@ -309,7 +309,7 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
 	LMIC.dn2Dr = SF9;
 
 	// Set data rate and transmit power (note: txpow seems to be ignored by the library)
-	LMIC_setDrTxpow(DR_SF7, 14);
+	LMIC_setDrTxpow(DR_SF12, 14);
 
     _cursor = 0;
 
