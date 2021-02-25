@@ -255,28 +255,28 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
     Serial.println("Started");
     #endif
 
-	// copy and convert string (aka char *) to byte array
-	char tempStr[3] = {0x00, 0x00, 0x00};
-	// -> deveui
-	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
-		tempStr[0] = *(deveui+(i*2));
-		tempStr[1] = *(deveui+(i*2)+1);
-		*(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
-	}
-	// -> appeui
-	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
-		tempStr[0] = *(appeui+(i*2));
-		tempStr[1] = *(appeui+(i*2)+1);
-		*(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
-	}
-	// -> appkey
-	for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
-		tempStr[0] = *(appkey+(i*2));
-		tempStr[1] = *(appkey+(i*2)+1);
-		*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
-	}
+    // copy and convert string (aka char *) to byte array
+    char tempStr[3] = {0x00, 0x00, 0x00};
+    // -> deveui
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
+    	tempStr[0] = *(deveui+(i*2));
+    	tempStr[1] = *(deveui+(i*2)+1);
+    	*(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
+    // -> appeui
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
+    	tempStr[0] = *(appeui+(i*2));
+    	tempStr[1] = *(appeui+(i*2)+1);
+    	*(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
+    // -> appkey
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+    	tempStr[0] = *(appkey+(i*2));
+    	tempStr[1] = *(appkey+(i*2)+1);
+    	*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
     
-	pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
+    pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
     pinMode(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, OUTPUT);
@@ -287,31 +287,31 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
-	LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
+    LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
     LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-  	LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
-	LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
-	LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band
-	// TTN defines an additional channel at 869.525Mhz using SF9 for class B
-	// devices' ping slots. LMIC does not have an easy way to define set this
-	// frequency and support for class B is spotty and untested, so this
-	// frequency is not configured here.
+    LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
+    LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band
+    // TTN defines an additional channel at 869.525Mhz using SF9 for class B
+    // devices' ping slots. LMIC does not have an easy way to define set this
+    // frequency and support for class B is spotty and untested, so this
+    // frequency is not configured here.
 
-	// Disable link check validation
-	LMIC_setLinkCheckMode(0);
+    // Disable link check validation
+    LMIC_setLinkCheckMode(0);
 
-	// required for downlink
-	LMIC.dn2Dr = SF9;
+    // required for downlink
+    LMIC.dn2Dr = SF9;
 
-	// Set data rate and transmit power (note: txpow seems to be ignored by the library)
-	LMIC_setDrTxpow(DR_SF12, 14);
-	// Enable ADR
-	LMIC_setAdrMode(1);
+    // Set data rate and transmit power (note: txpow seems to be ignored by the library)
+    LMIC_setDrTxpow(DR_SF12, 14);
+    // Enable ADR
+    LMIC_setAdrMode(1);
 
     _cursor = 0;
 
