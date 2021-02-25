@@ -68,27 +68,27 @@ void onEvent (ev_t ev) {
         	#endif
             break;
         case EV_BEACON_FOUND:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_BEACON_FOUND"));
             #endif
             break;
         case EV_BEACON_MISSED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_BEACON_MISSED"));
             #endif
             break;
         case EV_BEACON_TRACKED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_BEACON_TRACKED"));
             #endif
             break;
         case EV_JOINING:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_JOINING"));
             #endif
             break;
         case EV_JOINED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_JOINED"));
             {
               u4_t netid = 0;
@@ -131,19 +131,19 @@ void onEvent (ev_t ev) {
         ||     break;
         */
         case EV_JOIN_FAILED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_JOIN_FAILED"));
             #endif
             error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_REJOIN_FAILED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_REJOIN_FAILED"));
             #endif
             error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
         case EV_TXCOMPLETE:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial.println(F("Received ack"));
@@ -158,28 +158,28 @@ void onEvent (ev_t ev) {
             // os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
-       		#ifdef DEBUG
+       	    #ifdef DEBUG
             Serial.println(F("EV_LOST_TSYNC"));
             #endif
             break;
         case EV_RESET:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_RESET"));
             #endif
             break;
         case EV_RXCOMPLETE:
             // data received in ping slot
-       		#ifdef DEBUG
+           #ifdef DEBUG
             Serial.println(F("EV_RXCOMPLETE"));
             #endif
             break;
         case EV_LINK_DEAD:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_LINK_DEAD"));
             #endif
             break;
         case EV_LINK_ALIVE:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_LINK_ALIVE"));
             #endif
             break;
@@ -192,12 +192,12 @@ void onEvent (ev_t ev) {
         ||    break;
         */
         case EV_TXSTART:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_TXSTART"));
             #endif
             break;
         case EV_TXCANCELED:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_TXCANCELED"));
             #endif
             break;
@@ -205,14 +205,14 @@ void onEvent (ev_t ev) {
             /* do not print anything -- it wrecks timing */
             break;
         case EV_JOIN_TXCOMPLETE:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_JOIN_TXCOMPLETE: no JoinAccept"));
             #endif
             error(DRAMCO_UNO_ERROR_LORA_JOIN);
             break;
 
         default:
-        	#ifdef DEBUG
+            #ifdef DEBUG
             Serial.print(F("Unknown event: "));
             Serial.println((unsigned) ev);
             #endif
