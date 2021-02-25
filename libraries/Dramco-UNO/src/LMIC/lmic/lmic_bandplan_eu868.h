@@ -61,7 +61,7 @@ LMICeu868_isValidBeacon1(const uint8_t *d) {
 #undef LMICbandplan_isFSK
 #define LMICbandplan_isFSK()    (/* RX datarate */LMIC.dndr == EU868_DR_FSK)
 
-#define LMICbandplan_getInitialDrJoin() (EU868_DR_SF7)
+#define LMICbandplan_getInitialDrJoin() (EU868_DR_SF12) // Original LMIC lib: EU868_DR_SF7
 
 void LMICeu868_setBcnRxParams(void);
 #define LMICbandplan_setBcnRxParams()   LMICeu868_setBcnRxParams()
