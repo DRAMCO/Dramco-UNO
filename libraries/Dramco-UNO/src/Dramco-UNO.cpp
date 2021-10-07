@@ -25,8 +25,6 @@ static bool _keep3V3Active = false;
 static uint8_t _accelerometerIntEnabled = false;
 static uint8_t _buttonIntEnabled = false;
 
-float _calibration = 1;
-
 LIS2DW12 _accelerometer;
 
 bool packetReadyForTransmission = false; 
@@ -430,7 +428,7 @@ float DramcoUnoClass::readTemperature(){
     _keep3V3Active = true;
     sleep(500); // Wait for voltage to stabilize
     _keep3V3Active = false;
-    for(int i = 0; i < 1000; i++){
+    for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
         int reference = analogRead(A3);
         int temp = analogRead(A1);
         average += 2.5*temp/reference*1000;
