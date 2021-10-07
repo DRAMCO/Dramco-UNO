@@ -110,7 +110,6 @@ class DramcoUnoClass {
 
 		// --- Sensors ---
 		// - Temperature
-		void calibrateTemperature();
 		float readTemperature();		// Gets temperature in degrees C
 		void sendTemperature();			
 		void addTemperature();
