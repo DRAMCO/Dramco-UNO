@@ -324,8 +324,6 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
 
     pinMode(DRAMCO_UNO_SOIL_PIN_EN, OUTPUT);
     digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
-    
-    calibrateTemperature();
 }
 
 // --- General UTILs ---
@@ -424,25 +422,21 @@ void DramcoUnoClass::_lppAddAcceleration(uint8_t channel, float x, float y, floa
 // --- Sensor readings ---
 
 // - Temperature 
-void DramcoUnoClass::calibrateTemperature(){
-    _calibration = readTemperatureAccelerometer()/readTemperature();
-}
-
 float DramcoUnoClass::readTemperature(){
-    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     float average=0;
-    analogReference(EXTERNAL);
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+    analogReference(EXTERNAL);
     _keep3V3Active = true;
     sleep(500); // Wait for voltage to stabilize
     _keep3V3Active = false;
-    for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
-        float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN))*DRAMCO_UNO_TEMPERATURE_CALIBRATE; //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
-        value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
-        average += value;
+    for(int i = 0; i < 1000; i++){
+        int reference = analogRead(A3);
+        int temp = analogRead(A1);
+        average += 2.5*temp/reference*1000;
     }
-    average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
-    return average*_calibration;
+    average = (float)(-0.1225490196078)*(average/1000-1567);
+    return average;
 }
 
 void DramcoUnoClass::addTemperature(){
