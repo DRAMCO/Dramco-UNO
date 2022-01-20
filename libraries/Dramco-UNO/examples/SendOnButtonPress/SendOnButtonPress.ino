@@ -1,11 +1,10 @@
 #include <Dramco-UNO.h>
 
-LoraParam Device_EUI = "001449031C31FF8D";
-LoraParam Application_EUI = "70B3D57ED000EFD3";
-LoraParam App_Key = "1697F5AFE2242FFBA53E8383ED0ABB2D";
+LoraParam DevEUI = "70B3D57ED004B3EC";
+LoraParam AppKey = "CB61E2552ABB2DF5D0F18803B694BDEF";
 
 void setup() {
-    DramcoUno.begin(Device_EUI, Application_EUI, App_Key);
+    DramcoUno.begin(DevEUI, AppKey);
 }
 
 void loop() {

@@ -246,6 +246,11 @@ void pciDeinit(){
 }
 
 // ------------------------ DRAMCO UNO LIB ------------------------
+void DramcoUnoClass::begin(LoraParam deveui, LoraParam appkey){
+    LoraParam appeui = "0000000000000000";
+    begin(deveui, appeui, appkey);
+}
+
 void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
     #ifdef DEBUG
@@ -337,7 +342,7 @@ void DramcoUnoClass::loop(){
 
 void DramcoUnoClass::delay(uint32_t d){
     Serial.flush();
-    if(!packetReadyForTransmission)
+    if(!packetReadyForTransmission && d>100)
         DramcoUnoClass::_sleep(d);
     else{
         unsigned long startMillis = millis();
@@ -428,13 +433,44 @@ float DramcoUnoClass::readTemperature(){
     _keep3V3Active = true;
     sleep(500); // Wait for voltage to stabilize
     _keep3V3Active = false;
+
+    #if HARDWARE_VERSION >= 2
+
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
+<<<<<<< Updated upstream
         int reference = analogRead(A3);
         int temp = analogRead(A1);
         average += 2.5*temp/reference*1000;
     }
     average = (float)(-0.1225490196078)*(average/1000-1567);
     return average;
+=======
+        float value = 2500.0*analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN)/analogRead(DRAMCO_UNO_VOLTAGE_REF_PIN); //  Using 2.5V reference 
+        average += value;
+        delayMicroseconds(500);
+    }
+    average = average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
+    average = (8.194 - sqrt(67.1416+0.01048*(1324-average)))/(-0.00524)+27;
+    return average;
+
+    #else
+
+    for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
+        int reference = analogRead(A3);
+        int temp = analogRead(A1);
+        average += 2.5*temp/reference*1000;
+    }
+<<<<<<< HEAD
+    average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
+    return average*_calibration;
+
+    #endif
+
+=======
+    average = (float)(-0.1225490196078)*(average/1000-1567);
+    return average;
+>>>>>>> 823ee28be22860865214489aa510a20d61d20685
+>>>>>>> Stashed changes
 }
 
 void DramcoUnoClass::addTemperature(){
@@ -470,7 +506,10 @@ void DramcoUnoClass::sendTemperature(){
 float DramcoUnoClass::readLuminosity(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
-    float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; // max light value = 160, *100
+    _keep3V3Active = true;
+    delay(200);
+    _keep3V3Active = false;
+    float value = 2500.0*analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)/analogRead(DRAMCO_UNO_VOLTAGE_REF_PIN)*0.625; // max light value = 160, *100
     if(value <= 100)
         return value;
     else
@@ -561,7 +600,7 @@ void DramcoUnoClass::delayUntilShake(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
-    pciInit(9);
+    pciInit(DRAMCO_UNO_ACCELEROMTER_INT_PIN);
     _accelerometer.initDoubleTap(4);
     sleep(-1);
 }
@@ -570,7 +609,7 @@ void DramcoUnoClass::delayUntilFall(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
-    pciInit(9);
+    pciInit(DRAMCO_UNO_ACCELEROMTER_INT_PIN);
     _accelerometer.initFreefall();
     sleep(-1);
 }
@@ -579,7 +618,7 @@ void DramcoUnoClass::delayUntilMotion(){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
-    pciInit(9);
+    pciInit(DRAMCO_UNO_ACCELEROMTER_INT_PIN);
     _accelerometer.initWakeUp();
     sleep(-1);
 }
@@ -597,7 +636,7 @@ void DramcoUnoClass::delayUntilFreeFall(){
 // - Button
 void DramcoUnoClass::delayUntilButtonPress(){
     _buttonIntEnabled = true;
-    pciInit(10);
+    pciInit(DRAMCO_UNO_BUTTON_INT_PIN);
     sleep(-1);
 }
 
@@ -719,11 +758,15 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     wdt_reset();
     wdt_disable();
 
+
+
     #ifdef DEBUG
     Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
     #endif
     digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+
+
 }
 
 unsigned long DramcoUnoClass::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
@@ -786,9 +829,15 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
             _accelerometerIntEnabled = false;
         }
     }
+    
+}
+
+ISR (PCINT2_vect){ // handle pin change interrupt for D0 to D7 here  
     if(_buttonIntEnabled){
-        if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 10 is low
+        if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 4 is low
+            #if HARDWARE_VERSION <= 2
             delay(50);
+            #endif
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
                 DramcoUnoClass::blink();
                 pciDeinit();

@@ -14,9 +14,17 @@
 
 #include "LIS2DW12/LIS2DW12.h"
 
+#define HARDWARE_VERSION 2
+
+#if HARDWARE_VERSION >= 2
+#define DRAMCO_UNO_LED_NAME 					  10
+#define DRAMCO_UNO_LED_PORT 					  PORTB
+#define DRAMCO_UNO_LED_PIN 						  2
+#else
 #define DRAMCO_UNO_LED_NAME 					  4
 #define DRAMCO_UNO_LED_PORT 					  PORTD
 #define DRAMCO_UNO_LED_PIN 						  4
+#endif
 
 #define DRAMCO_UNO_BLINK_ON 					  100 // Time on in ms
 
@@ -37,22 +45,44 @@
 #define DRAMCO_UNO_LORA_KEY_SIZE  				   16
 
 #define DRAMCO_UNO_BUFFER_SIZE 					   20 // Should be enough for temp, lumin, accelerometer and soil moisture
-#define DRAMCO_UNO_SERIAL_BAUDRATE			       115200
+#define DRAMCO_UNO_SERIAL_BAUDRATE			       9600
+
 // Sensor constants
+#define DRAMCO_UNO_VOLTAGE_REF_PIN 			   	   A3
+
 #define DRAMCO_UNO_LIGHT_SENSOR_PIN 			   A0
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN   7
 #define DRAMCO_UNO_TEMPERATURE_SENSOR_PIN 	       A1
+<<<<<<< Updated upstream
 #define DRAMCO_UNO_TEMPERATURE_AVERAGE		       100
+=======
+<<<<<<< HEAD
+#define DRAMCO_UNO_TEMPERATURE_AVERAGE		       400.0
+#define DRAMCO_UNO_TEMPERATURE_CALIBRATE		   3.27
+=======
+#define DRAMCO_UNO_TEMPERATURE_AVERAGE		       100
+>>>>>>> 823ee28be22860865214489aa510a20d61d20685
+>>>>>>> Stashed changes
 
 #define DRAMCO_UNO_ACCELEROMTER_INT_PIN 		   9
 #define DRAMCO_UNO_ACCELEROMTER_INT_NAME 		   PINB1
 #define DRAMCO_UNO_ACCELEROMTER_INT_PORT 		   PINB
 
+#if HARDWARE_VERSION >= 2
+#define DRAMCO_UNO_BUTTON_INT_PIN 				   4
+#define DRAMCO_UNO_BUTTON_INT_NAME 				   PIND4
+#define DRAMCO_UNO_BUTTON_INT_PORT 				   PIND
+#else
 #define DRAMCO_UNO_BUTTON_INT_PIN 				   10
 #define DRAMCO_UNO_BUTTON_INT_NAME 				   PINB2
 #define DRAMCO_UNO_BUTTON_INT_PORT 				   PINB
+#endif
 
+#if HARDWARE_VERSION >=2
+#define DRAMCO_UNO_SOIL_PIN_EN 					   DRAMCO_UNO_LED_NAME
+#else
 #define DRAMCO_UNO_SOIL_PIN_EN 					   A3
+#endif
 #define DRAMCO_UNO_SOIL_PIN_ANALOG 				   A2
 #define DRAMCO_UNO_SOIL_DIVIDER 				   20.0 // 2000 = max value *100 (percent)
 
@@ -97,7 +127,8 @@ typedef const char * LoraParam;
 class DramcoUnoClass {
 	public:
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
-		
+		void begin(LoraParam deveui, LoraParam appkey);
+
 		// --- Utils ---
 		void loop();
 		void delay(uint32_t d);
