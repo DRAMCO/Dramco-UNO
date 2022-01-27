@@ -437,14 +437,6 @@ float DramcoUnoClass::readTemperature(){
     #if HARDWARE_VERSION >= 2
 
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
-<<<<<<< Updated upstream
-        int reference = analogRead(A3);
-        int temp = analogRead(A1);
-        average += 2.5*temp/reference*1000;
-    }
-    average = (float)(-0.1225490196078)*(average/1000-1567);
-    return average;
-=======
         float value = 2500.0*analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN)/analogRead(DRAMCO_UNO_VOLTAGE_REF_PIN); //  Using 2.5V reference 
         average += value;
         delayMicroseconds(500);
@@ -456,21 +448,16 @@ float DramcoUnoClass::readTemperature(){
     #else
 
     for(int i = 0; i < DRAMCO_UNO_TEMPERATURE_AVERAGE; i++){
-        int reference = analogRead(A3);
-        int temp = analogRead(A1);
-        average += 2.5*temp/reference*1000;
+        float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN)*3.27); //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
+        value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
+        average += value;
+	delayMicroseconds(500);
     }
-<<<<<<< HEAD
-    average=average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
-    return average*_calibration;
+
+    return average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
 
     #endif
 
-=======
-    average = (float)(-0.1225490196078)*(average/1000-1567);
-    return average;
->>>>>>> 823ee28be22860865214489aa510a20d61d20685
->>>>>>> Stashed changes
 }
 
 void DramcoUnoClass::addTemperature(){
