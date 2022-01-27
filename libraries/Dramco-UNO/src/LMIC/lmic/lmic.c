@@ -1476,10 +1476,10 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms
         // a compile-time configuration. (In other words, assume that millis()
         // clock is accurate to 0.1%.) You should never use clockerror to
         // compensate for system-late problems.
-        u2_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / (1000 * 1000);
+        u4_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / (1000ul * 1000ul);
         if (! LMIC_ENABLE_arbitrary_clock_error && clockerr > maxError)
             {
-            clockerr = maxError;
+            clockerr = (u2_t) maxError;
             }
         }
 

@@ -139,7 +139,7 @@ status_t LIS2DW12Core::readRegister(uint8_t* outputPointer, uint8_t offset) {
 	if( Wire.endTransmission() != 0 ){
 		returnError = IMU_HW_ERROR;
 	}
-	Wire.requestFrom(I2CAddress, numBytes);
+	Wire.requestFrom((uint8_t)I2CAddress, numBytes);
 	unsigned long startMillis = millis();
 	while ( Wire.available() && millis() - startMillis < I2C_TIMEOUT){ // slave may send less than requested
 		result = Wire.read(); // receive a byte as a proper uint8_t
