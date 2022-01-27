@@ -188,7 +188,7 @@
             {
                "name":"Dramco UNO",
                "architecture":"avr",
-               "version":"0.5",
+               "version":"0.5.1",
                "category":"Dramco",
                "url":"https://github.com/DRAMCO/Dramco-UNO/releases/download/v0.5.1/Dramco-UNO-v0.5.1.zip",
                "archiveFileName":"Dramco-UNO-v0.5.1.zip",
