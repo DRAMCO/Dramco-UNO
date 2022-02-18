@@ -8,6 +8,7 @@
 
 #include <avr/sleep.h>
 #include <avr/wdt.h>
+#include <util/atomic.h>
 
 #include "Wire/Wire.h"
 #include "Deepsleep/DeepSleep_avr_definition.h"
@@ -120,6 +121,8 @@ class DramcoUnoClass {
 	public:
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void begin(LoraParam deveui, LoraParam appkey);
+		void begin();
+
 
 		// --- Utils ---
 		void loop();

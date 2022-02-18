@@ -229,6 +229,8 @@ void do_send(osjob_t* j){
         LMIC_setTxData2(1, data, _cursor, 0);
         packetReadyForTransmission = true;
         #ifdef DEBUG
+        Serial.print(os_getTime());
+        Serial.print(": ");
         Serial.println(F("Packet queued"));
         #endif
     }
@@ -246,6 +248,26 @@ void pciDeinit(){
 }
 
 // ------------------------ DRAMCO UNO LIB ------------------------
+void DramcoUnoClass::begin(){
+    pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
+
+     // Initialize accelerometer int pin
+    pinMode(DRAMCO_UNO_ACCELEROMTER_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_BUTTON_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_BUTTON_INT_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_SOIL_PIN_EN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
+}
+
 void DramcoUnoClass::begin(LoraParam deveui, LoraParam appkey){
     LoraParam appeui = "0000000000000000";
     begin(deveui, appeui, appkey);
@@ -745,6 +767,13 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     wdt_reset();
     wdt_disable();
 
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+      extern volatile unsigned long timer0_millis;
+      extern volatile unsigned long timer0_overflow_count;
+      timer0_millis += _millisInDeepSleep;
+      // timer0 uses a /64 prescaler and overflows every 256 timer ticks
+      timer0_overflow_count += microsecondsToClockCycles((uint32_t)_millisInDeepSleep * 1000) / (64 * 256);
+    }
 
 
     #ifdef DEBUG
@@ -753,6 +782,7 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
+    
 
 }
 

@@ -119,7 +119,7 @@ void os_wmsbf4 (xref2u1_t buf, u4_t v) {
 
 #if !defined(os_getBattLevel)
 u1_t os_getBattLevel (void) {
-    return MCMD_DEVS_BATT_NOINFO;
+    return LMIC.client.devStatusAns_battery;
 }
 #endif
 
@@ -764,6 +764,9 @@ applyAdrRequests(
             p4     = opts[oidx+4];                  // ChMaskCtl, NbTrans
             u1_t chpage = p4 & MCMD_LinkADRReq_Redundancy_ChMaskCntl_MASK;     // channel page
 
+            // notice that we ignore map_ok except on the last setting.
+            // so LMICbandplan_mapChannels should report failure status, but do
+            // the work; if it fails, we'll back it out.
             map_ok = LMICbandplan_mapChannels(chpage, chmap);
             LMICOS_logEventUint32("applyAdrRequests: mapChannels", ((u4_t)chpage << 16)|(chmap << 0));
         }
@@ -1476,10 +1479,15 @@ ostime_t LMICcore_adjustForDrift (ostime_t delay, ostime_t hsym, rxsyms_t rxsyms
         // a compile-time configuration. (In other words, assume that millis()
         // clock is accurate to 0.1%.) You should never use clockerror to
         // compensate for system-late problems.
-        u4_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / (1000ul * 1000ul);
+        // note about compiler: The initializer for maxError is coded for
+        // maximum portability.  On 16-bit systems, some compilers complain
+        // if we write x / (1000 * 1000).  x / 1000 / 1000 uses constants,
+        // is generally acceptable so it can be optimized in compiler's own
+        // way.
+        u2_t const maxError = LMIC_kMaxClockError_ppm * MAX_CLOCK_ERROR / 1000 / 1000;
         if (! LMIC_ENABLE_arbitrary_clock_error && clockerr > maxError)
             {
-            clockerr = (u2_t) maxError;
+            clockerr = maxError;
             }
         }
 
@@ -1616,21 +1624,9 @@ static bit_t processJoinAccept (void) {
     // initDefaultChannels(0) for EU-like, nothing otherwise
     LMICbandplan_joinAcceptChannelClear();
 
-    if (!LMICbandplan_hasJoinCFlist() && dlen > LEN_JA) {
-            // if no JoinCFList, we're supposed to continue
-            // the join per 2.2.5 of LoRaWAN regional 2.2.4
-            // https://github.com/mcci-catena/arduino-lmic/issues/19
-    } else if ( LMICbandplan_hasJoinCFlist() && dlen > LEN_JA ) {
-        dlen = OFF_CFLIST;
-        for( u1_t chidx=3; chidx<8; chidx++, dlen+=3 ) {
-            u4_t freq = LMICbandplan_convFreq(&LMIC.frame[dlen]);
-            if( freq ) {
-                LMIC_setupChannel(chidx, freq, 0, -1);
-#if LMIC_DEBUG_LEVEL > 1
-                LMIC_DEBUG_PRINTF("%"LMIC_PRId_ostime_t": Setup channel, idx=%d, freq=%"PRIu32"\n", os_getTime(), chidx, freq);
-#endif
-            }
-        }
+    // process the CFList if present
+    if (dlen == LEN_JAEXT) {
+        LMICbandplan_processJoinAcceptCFList();
     }
 
     // already incremented when JOIN REQ got sent off
@@ -2822,6 +2818,7 @@ void LMIC_reset (void) {
 
 void LMIC_init (void) {
     LMIC.opmode = OP_SHUTDOWN;
+    LMIC.client.devStatusAns_battery = MCMD_DEVS_BATT_NOINFO;
     LMICbandplan_init();
 }
 
@@ -2882,7 +2879,11 @@ dr_t LMIC_feasibleDataRateForFrame(dr_t dr, u1_t payloadSize) {
 }
 
 static bit_t isTxPathBusy(void) {
-    return (LMIC.opmode & (OP_TXDATA|OP_JOINING)) != 0;
+    return (LMIC.opmode & (OP_POLL | OP_TXDATA | OP_JOINING | OP_TXRXPEND)) != 0;
+}
+
+bit_t LMIC_queryTxReady (void) {
+    return ! isTxPathBusy();
 }
 
 static bit_t adjustDrForFrameIfNotBusy(u1_t len) {
@@ -2902,6 +2903,10 @@ void LMIC_setTxData (void) {
 }
 
 void LMIC_setTxData_strict (void) {
+    if (isTxPathBusy()) {
+        return;
+    }
+
     LMICOS_logEventUint32(__func__, ((u4_t)LMIC.pendTxPort << 24u) | ((u4_t)LMIC.pendTxConf << 16u) | (LMIC.pendTxLen << 0u));
     LMIC.opmode |= OP_TXDATA;
     if( (LMIC.opmode & OP_JOINING) == 0 ) {
@@ -2920,7 +2925,7 @@ lmic_tx_error_t LMIC_setTxData2 (u1_t port, xref2u1_t data, u1_t dlen, u1_t conf
 
 // send a message w/o callback; do not adjust data rate
 lmic_tx_error_t LMIC_setTxData2_strict (u1_t port, xref2u1_t data, u1_t dlen, u1_t confirmed) {
-    if ( LMIC.opmode & OP_TXDATA ) {
+    if (isTxPathBusy()) {
         // already have a message queued
         return LMIC_ERROR_TX_BUSY;
     }
@@ -2940,7 +2945,7 @@ lmic_tx_error_t LMIC_setTxData2_strict (u1_t port, xref2u1_t data, u1_t dlen, u1
             return LMIC_ERROR_TX_FAILED;
         }
     }
-    return 0;
+    return LMIC_ERROR_SUCCESS;
 }
 
 // send a message with callback; try to adjust data rate
@@ -3100,4 +3105,48 @@ int LMIC_getNetworkTimeReference(lmic_time_reference_t *pReference) {
     LMIC_API_PARAMETER(pReference);
 #endif // LMIC_ENABLE_DeviceTimeReq
     return 0;
+}
+
+///
+/// \brief set battery level to be returned by `DevStatusAns`.
+///
+/// \param uBattLevel is the 8-bit value to be returned. Per LoRaWAN 1.0.3 line 769,
+///             this is \c MCMD_DEVS_EXT_POWER (0) if on external power,
+///             \c MCMD_DEVS_NOINFO (255) if not able to measure battery level,
+///             or a value in [ \c MCMD_DEVS_BATT_MIN, \c MCMD_DEVS_BATT_MAX ], numerically
+///             [1, 254], to represent the charge state of the battery. Note that
+///             this is not millivolts.
+///
+/// \returns
+///     This function returns the previous value of the battery level.
+///
+/// \details
+///     The LMIC maintains an idea of the current battery state, initially set to
+///     \c MCMD_DEVS_NOINFO after the call to LMIC_init(). The appplication then calls
+///     this function from time to time to update the battery level.
+///
+///     It is possible (in non-Arduino environments) to supply a local implementation
+///     of os_getBatteryLevel(). In that case, it's up to the implementation to decide
+///     whether to use the value supplied by this API.
+///
+///     This implementation was chosen to minimize the risk of a battery measurement
+///     introducting breaking delays into the LMIC.
+///
+u1_t LMIC_setBatteryLevel(u1_t uBattLevel) {
+    const u1_t result = LMIC.client.devStatusAns_battery;
+
+    LMIC.client.devStatusAns_battery = uBattLevel;
+    return result;
+}
+
+///
+/// \brief get battery level that is to be returned by `DevStatusAns`.
+///
+/// \returns
+///     This function returns the saved value of the battery level.
+///
+/// \see LMIC_setBatteryLevel()
+///
+u1_t LMIC_getBatteryLevel(void) {
+    return LMIC.client.devStatusAns_battery;
 }
