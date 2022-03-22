@@ -452,9 +452,9 @@ float DramcoUnoClass::readTemperature(){
     digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
     analogReference(EXTERNAL);
-    _keep3V3Active = true;
-    sleep(500); // Wait for voltage to stabilize
-    _keep3V3Active = false;
+
+    for(uint8_t i = 0; i < 10; i++)
+        delayMicroseconds(16383);
 
     #if HARDWARE_VERSION >= 2
 
@@ -515,14 +515,15 @@ void DramcoUnoClass::sendTemperature(){
 float DramcoUnoClass::readLuminosity(){
     analogReference(EXTERNAL);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
-    _keep3V3Active = true;
-    delay(200);
-    _keep3V3Active = false;
+    
+    for(uint8_t i = 0; i < 10; i++)
+        delayMicroseconds(16383);
+    
     float value = 2500.0*analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)/analogRead(DRAMCO_UNO_VOLTAGE_REF_PIN)*0.625; // max light value = 160, *100
-    if(value <= 100)
+    if(value <= 255)
         return value;
     else
-        return 100.0;
+        return 255.0;
 }
 
 void DramcoUnoClass::sendLuminosity(){

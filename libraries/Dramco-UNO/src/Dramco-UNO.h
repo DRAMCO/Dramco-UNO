@@ -16,6 +16,7 @@
 #include "LIS2DW12/LIS2DW12.h"
 
 #define HARDWARE_VERSION 2
+#define DEBUG
 
 #if HARDWARE_VERSION >= 2
 #define DRAMCO_UNO_LED_NAME 					  10
