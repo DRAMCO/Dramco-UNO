@@ -847,10 +847,26 @@ ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here
             _accelerometerIntEnabled = false;
         }
     }
+    /* Button interrupt handling DRAMCO UNO v1 */
+    #if HARDWARE_VERSION < 2
+    if(_buttonIntEnabled){
+        if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 4 is low
+            delay(50);
+            if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
+                DramcoUnoClass::blink();
+                pciDeinit();
+                _millisInDeepSleep = -1; // Stop WDT sleep
+                _buttonIntEnabled = false;
+            }
+        }
+    }
+    #endif
     
 }
 
 ISR (PCINT2_vect){ // handle pin change interrupt for D0 to D7 here  
+    /* Button pin change in DRAMCO UNO v2 */
+    #if HARDWARE_VERSION >= 2
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 4 is low
             #if HARDWARE_VERSION <= 2
@@ -864,6 +880,7 @@ ISR (PCINT2_vect){ // handle pin change interrupt for D0 to D7 here
             }
         }
     }
+    #endif
     
 }
 
