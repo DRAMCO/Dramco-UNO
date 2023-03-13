@@ -519,7 +519,14 @@ float DramcoUnoClass::readLuminosity(){
     for(uint8_t i = 0; i < 10; i++)
         delayMicroseconds(16383);
     
+    #if HARDWARE_VERSION >= 2
     float value = 2500.0*analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)/analogRead(DRAMCO_UNO_VOLTAGE_REF_PIN)*0.625; // max light value = 160, *100
+    #else
+    float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; // max light value = 160, *100
+    #endif
+    #ifdef DEBUG
+    Serial.println(value);
+    #endif
     if(value <= 255)
         return value;
     else
