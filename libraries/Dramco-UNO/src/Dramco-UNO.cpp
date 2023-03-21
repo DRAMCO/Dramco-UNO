@@ -9,9 +9,11 @@ const lmic_pinmap lmic_pins = {
   .dio = {DRAMCO_UNO_LMIC_DIO0_PIN, DRAMCO_UNO_LMIC_DIO1_PIN, DRAMCO_UNO_LMIC_DIO2_PIN},
 };
 
+static u4_t _devaddr;
 static u1_t _appeui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _deveui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
+static u1_t _nwkskey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
 static osjob_t blinkjob;
@@ -273,6 +275,103 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appkey){
     begin(deveui, appeui, appkey);
 }
 
+void DramcoUnoClass::beginABP(LoraParam devaddr, LoraParam nwkskey, LoraParam appkey){
+
+    #ifdef DEBUG
+    Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
+    Serial.println("Started");
+    #endif
+
+    // copy and convert string (aka char *) to byte array
+    char tempStr[3] = {0x00, 0x00, 0x00};
+    // -> devaddr
+    u1_t _devaddr_temp[DRAMCO_UNO_LORA_DEVADDR_SIZE] = {0x00, 0x00, 0x00, 0x00};
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_DEVADDR_SIZE; i++){
+    	tempStr[0] = *(devaddr+(i*2));
+    	tempStr[1] = *(devaddr+(i*2)+1);
+    	*(_devaddr_temp+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
+    _devaddr = (u4_t) ( ((uint32_t) _devaddr_temp[0] << 24) | ((uint32_t) _devaddr_temp[1] << 16) | ((uint32_t) _devaddr_temp[2] << 8) | (uint32_t) _devaddr_temp[3] );
+    Serial.println(_devaddr, HEX);
+
+    // -> nwkskey
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+    	tempStr[0] = *(nwkskey+(i*2));
+    	tempStr[1] = *(nwkskey+(i*2)+1);
+    	*(_nwkskey+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
+    // -> appkey
+    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+    	tempStr[0] = *(appkey+(i*2));
+    	tempStr[1] = *(appkey+(i*2)+1);
+    	*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+    }
+    
+    pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_LED_NAME, OUTPUT);
+    
+    os_init();
+    // Reset the MAC state. Session and pending data transfers will be discarded.
+    LMIC_reset();
+
+    // #ifdef PROGMEM
+    // // On AVR, these values are stored in flash and only copied to RAM
+    // // once. Copy them to a temporary buffer here, LMIC_setSession will
+    // // copy them into a buffer of its own again.
+    // uint8_t appskey[sizeof(APPSKEY)];
+    // uint8_t nwkskey[sizeof(NWKSKEY)];
+    // memcpy_P(appskey, APPSKEY, sizeof(APPSKEY));
+    // memcpy_P(nwkskey, NWKSKEY, sizeof(NWKSKEY));
+    // LMIC_setSession (0x1, _devaddr, _nwkskey, _appkey);
+    // #else
+    // If not running an AVR with PROGMEM, just use the arrays directly
+    LMIC_setSession (0x1, _devaddr, _nwkskey, _appkey);
+    // #endif
+
+    LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
+    LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
+    LMIC_setupChannel(2, 868500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(3, 867100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(4, 867300000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(5, 867500000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(6, 867700000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(7, 867900000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
+    LMIC_setupChannel(8, 868800000, DR_RANGE_MAP(DR_FSK,  DR_FSK),  BAND_MILLI);      // g2-band
+    // TTN defines an additional channel at 869.525Mhz using SF9 for class B
+    // devices' ping slots. LMIC does not have an easy way to define set this
+    // frequency and support for class B is spotty and untested, so this
+    // frequency is not configured here.
+
+    // Disable link check validation
+    LMIC_setLinkCheckMode(0);
+
+    // required for downlink
+    LMIC.dn2Dr = SF9;
+
+    // Set data rate and transmit power (note: txpow seems to be ignored by the library)
+    LMIC_setDrTxpow(DR_SF12, 14);
+    // Enable ADR
+    LMIC_setAdrMode(1);
+
+    _cursor = 0;
+
+    // Initialize accelerometer int pin
+    pinMode(DRAMCO_UNO_ACCELEROMTER_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_BUTTON_INT_PIN, INPUT);
+    digitalWrite(DRAMCO_UNO_BUTTON_INT_PIN, HIGH);
+
+    pinMode(DRAMCO_UNO_SOIL_PIN_EN, OUTPUT);
+    digitalWrite(DRAMCO_UNO_SOIL_PIN_EN, LOW);
+}
+
 void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
 
     #ifdef DEBUG
@@ -524,9 +623,7 @@ float DramcoUnoClass::readLuminosity(){
     #else
     float value = analogRead(DRAMCO_UNO_LIGHT_SENSOR_PIN)*0.625; // max light value = 160, *100
     #endif
-    #ifdef DEBUG
     Serial.println(value);
-    #endif
     if(value <= 255)
         return value;
     else

@@ -45,6 +45,7 @@
 
 #define DRAMCO_UNO_LORA_EUI_SIZE  				   8
 #define DRAMCO_UNO_LORA_KEY_SIZE  				   16
+#define DRAMCO_UNO_LORA_DEVADDR_SIZE			   4
 
 #define DRAMCO_UNO_BUFFER_SIZE 					   20 // Should be enough for temp, lumin, accelerometer and soil moisture
 #define DRAMCO_UNO_SERIAL_BAUDRATE			       9600
@@ -120,6 +121,7 @@ typedef const char * LoraParam;
 
 class DramcoUnoClass {
 	public:
+		void beginABP(LoraParam devaddr, LoraParam nwkskey, LoraParam appskey);
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void begin(LoraParam deveui, LoraParam appkey);
 		void begin();
