@@ -15,7 +15,7 @@
 
 #include "LIS2DW12/LIS2DW12.h"
 
-#define HARDWARE_VERSION 2
+#define HARDWARE_VERSION 1
 #define DEBUG
 
 #if HARDWARE_VERSION >= 2
