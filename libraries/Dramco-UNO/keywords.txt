@@ -25,6 +25,10 @@ error	KEYWORD2
 send	KEYWORD2
 sendWithOS	KEYWORD2
 clearMessage	KEYWORD2
+setSpreadingFactor	KEYWORD2
+setOutputPower	KEYWORD2
+setDataRate	KEYWORD2
+setADR	KEYWORD2
 
 readTemperature	KEYWORD2
 sendTemperature	KEYWORD2
