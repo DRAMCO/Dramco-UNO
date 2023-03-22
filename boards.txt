@@ -1,4 +1,4 @@
-dramcouno.name=Dramco Uno
+dramcouno.name=Dramco Uno v3
 
 dramcouno.vid.0=0x2341
 dramcouno.pid.0=0x0043
@@ -29,4 +29,71 @@ dramcouno.build.board=AVR_UNO
 dramcouno.build.core=arduino:arduino
 dramcouno.build.variant=dramco-uno
 
-dramcouno.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING  -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert -DLMIC_ENABLE_DeviceTimeReq=0
+dramcouno.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING  -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert -DLMIC_ENABLE_DeviceTimeReq=0 -DHARDWARE_VERSION=3
+
+dramcouno2.name=Dramco Uno v2
+
+dramcouno2.vid.0=0x2341
+dramcouno2.pid.0=0x0043
+dramcouno2.vid.1=0x2341
+dramcouno2.pid.1=0x0001
+dramcouno2.vid.2=0x2A03
+dramcouno2.pid.2=0x0043
+dramcouno2.vid.3=0x2341
+dramcouno2.pid.3=0x0243
+
+dramcouno2.upload.tool=arduino:avrdude
+dramcouno2.upload.protocol=arduino
+dramcouno2.upload.maximum_size=32256
+dramcouno2.upload.maximum_data_size=2048
+dramcouno2.upload.speed=115200
+
+dramcouno2.bootloader.tool=arduino:avrdude
+dramcouno2.bootloader.low_fuses=0xFF
+dramcouno2.bootloader.high_fuses=0xDE
+dramcouno2.bootloader.extended_fuses=0xFE
+dramcouno2.bootloader.unlock_bits=0x3F
+dramcouno2.bootloader.lock_bits=0x0F
+dramcouno2.bootloader.file=dramco-uno/optiboot_dramco_uno.hex
+
+dramcouno2.build.mcu=atmega328p
+dramcouno2.build.f_cpu=16000000L
+dramcouno2.build.board=AVR_UNO
+dramcouno2.build.core=arduino:arduino
+dramcouno2.build.variant=dramco-uno
+
+dramcouno2.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING  -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert -DLMIC_ENABLE_DeviceTimeReq=0 -DHARDWARE_VERSION=2
+
+
+dramcouno1.name=Dramco Uno v1
+
+dramcouno1.vid.0=0x2341
+dramcouno1.pid.0=0x0043
+dramcouno1.vid.1=0x2341
+dramcouno1.pid.1=0x0001
+dramcouno1.vid.2=0x2A03
+dramcouno1.pid.2=0x0043
+dramcouno1.vid.3=0x2341
+dramcouno1.pid.3=0x0243
+
+dramcouno1.upload.tool=arduino:avrdude
+dramcouno1.upload.protocol=arduino
+dramcouno1.upload.maximum_size=32256
+dramcouno1.upload.maximum_data_size=2048
+dramcouno1.upload.speed=115200
+
+dramcouno1.bootloader.tool=arduino:avrdude
+dramcouno1.bootloader.low_fuses=0xFF
+dramcouno1.bootloader.high_fuses=0xDE
+dramcouno1.bootloader.extended_fuses=0xFE
+dramcouno1.bootloader.unlock_bits=0x3F
+dramcouno1.bootloader.lock_bits=0x0F
+dramcouno1.bootloader.file=dramco-uno/optiboot_dramco_uno.hex
+
+dramcouno1.build.mcu=atmega328p
+dramcouno1.build.f_cpu=16000000L
+dramcouno1.build.board=AVR_UNO
+dramcouno1.build.core=arduino:arduino
+dramcouno1.build.variant=dramco-uno
+
+dramcouno1.build.extra_flags=-DARDUINO_LMIC_PROJECT_CONFIG_H_SUPPRESS -DCFG_eu868=1 -DCFG_sx1276_radio=1 -DUSE_IDEETRON_AES -DDISABLE_BEACONS -DDISABLE_PING  -DLMIC_MAX_FRAME_LENGTH=35 -D__AVR -DCFG_noassert -DLMIC_ENABLE_DeviceTimeReq=0 -DHARDWARE_VERSION=1

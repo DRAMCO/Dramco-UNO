@@ -51,7 +51,11 @@ static const uint8_t SCK  = PIN_SPI_SCK;
 static const uint8_t SDA = PIN_WIRE_SDA;
 static const uint8_t SCL = PIN_WIRE_SCL;
 
+#if HARDWARE_VERSION >= 2
 #define LED_BUILTIN 10
+#else
+#define LED_BUILTIN 4
+#endif
 
 #define PIN_A0   (14)
 #define PIN_A1   (15)
