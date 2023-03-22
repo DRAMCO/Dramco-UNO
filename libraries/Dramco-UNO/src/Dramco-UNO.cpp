@@ -27,6 +27,9 @@ static bool _keep3V3Active = false;
 static uint8_t _accelerometerIntEnabled = false;
 static uint8_t _buttonIntEnabled = false;
 
+static uint8_t _dataRate;
+static s1_t _outputPower;
+
 LIS2DW12 _accelerometer;
 
 bool packetReadyForTransmission = false; 
@@ -491,7 +494,7 @@ void DramcoUnoClass::setADR(bool enable){
 }
 
 void DramcoUnoClass::setDataRate(uint8_t sf){
-    this->_dataRate = sf;
+    _dataRate = sf;
     if(sf >= 12) LMIC_setDrTxpow(DR_SF12, _outputPower); 
     else if(sf == 11) LMIC_setDrTxpow(DR_SF11, _outputPower);
     else if(sf == 10) LMIC_setDrTxpow(DR_SF10, _outputPower);
@@ -506,8 +509,8 @@ void DramcoUnoClass::setSpreadingFactor(uint8_t sf){
 }
 
 void DramcoUnoClass::setOutputPower(uint8_t pow){
-    this->_outputPower = pow ;
-    setDataRate(this->_dataRate);
+    _outputPower = pow ;
+    setDataRate(_dataRate);
 }
 
 
