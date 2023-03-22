@@ -372,7 +372,8 @@ void DramcoUnoClass::begin(ActivationMode_t am, LoraParam loraparam1, LoraParam 
     LMIC.dn2Dr = SF9;
 
     // Set data rate and transmit power (note: txpow seems to be ignored by the library)
-    LMIC_setDrTxpow(DR_SF12, 14);
+    this->setSpreadingFactor(12);
+    this->setOutputPower(14);
     // Enable ADR
     LMIC_setAdrMode(1);
 
@@ -481,6 +482,35 @@ void DramcoUnoClass::_lppAddAcceleration(uint8_t channel, float x, float y, floa
     data[_cursor++] = vz;
 
 }
+
+void DramcoUnoClass::setADR(bool enable){
+    if(enable)
+        LMIC_setAdrMode(1);
+    else
+        LMIC_setAdrMode(0);
+}
+
+void DramcoUnoClass::setDataRate(uint8_t sf){
+    this->_dataRate = sf;
+    if(sf >= 12) LMIC_setDrTxpow(DR_SF12, _outputPower); 
+    else if(sf == 11) LMIC_setDrTxpow(DR_SF11, _outputPower);
+    else if(sf == 10) LMIC_setDrTxpow(DR_SF10, _outputPower);
+    else if(sf == 9) LMIC_setDrTxpow(DR_SF9, _outputPower);
+    else if(sf == 8) LMIC_setDrTxpow(DR_SF8, _outputPower);
+    else if(sf == 7) LMIC_setDrTxpow(DR_SF7, _outputPower);
+    else  LMIC_setDrTxpow(DR_SF10, _outputPower);
+}
+
+void DramcoUnoClass::setSpreadingFactor(uint8_t sf){
+    setDataRate(sf);
+}
+
+void DramcoUnoClass::setOutputPower(uint8_t pow){
+    this->_outputPower = pow ;
+    setDataRate(this->_dataRate);
+}
+
+
 
 // --- Sensor readings ---
 

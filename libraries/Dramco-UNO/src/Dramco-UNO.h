@@ -143,6 +143,10 @@ class DramcoUnoClass {
 		void send();					// Made blocking
 		void sendWithOS();				// Only with OS loop
 		void clearMessage();
+		void setADR(bool enable);
+		void setDataRate(uint8_t sf);			
+		void setSpreadingFactor(uint8_t sf);
+		void setOutputPower(uint8_t power);
 
 		// --- Sensors ---
 		// - Temperature
@@ -199,6 +203,8 @@ class DramcoUnoClass {
 	private:
 		static void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 		static void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
+		uint8_t _dataRate;
+		s1_t _outputPower;
 };
 
 void error(uint8_t errorcode);
