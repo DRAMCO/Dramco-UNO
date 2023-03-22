@@ -16,7 +16,7 @@
 #include "LIS2DW12/LIS2DW12.h"
 
 #ifndef HARDWARE_VERSION
-#define HARDWARE_VERSION 2 // Default version 2
+	#define HARDWARE_VERSION 2 // Default version 2
 #endif
 
 #define DEBUG
@@ -48,6 +48,7 @@
 
 #define DRAMCO_UNO_LORA_EUI_SIZE  				   8
 #define DRAMCO_UNO_LORA_KEY_SIZE  				   16
+#define DRAMCO_UNO_LORA_DEVADDR_SIZE			   4
 
 #define DRAMCO_UNO_BUFFER_SIZE 					   20 // Should be enough for temp, lumin, accelerometer and soil moisture
 #define DRAMCO_UNO_SERIAL_BAUDRATE			       9600
@@ -120,9 +121,14 @@
 
 
 typedef const char * LoraParam;
+typedef enum ActivationMode{
+    OTAA,
+    ABP,
+} ActivationMode_t;
 
 class DramcoUnoClass {
 	public:
+		void begin(ActivationMode_t am, LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void begin(LoraParam deveui, LoraParam appeui, LoraParam appkey);
 		void begin(LoraParam deveui, LoraParam appkey);
 		void begin();

@@ -67,3 +67,5 @@ sleep	KEYWORD2
 #######################################
 
 LED_BUITIN	LITERAL1
+ABP	LITERAL1
+OTAA	LITERAL1

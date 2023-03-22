@@ -9,9 +9,11 @@ const lmic_pinmap lmic_pins = {
   .dio = {DRAMCO_UNO_LMIC_DIO0_PIN, DRAMCO_UNO_LMIC_DIO1_PIN, DRAMCO_UNO_LMIC_DIO2_PIN},
 };
 
+static u4_t _devaddr;
 static u1_t _appeui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _deveui[DRAMCO_UNO_LORA_EUI_SIZE];
 static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
+static u1_t _nwkskey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
 static osjob_t blinkjob;
@@ -42,7 +44,7 @@ void os_getDevEui (u1_t* buf) { // LMIC expects reverse from TTN
 }
 
 void os_getDevKey (u1_t* buf) {  // no reverse here
-	memcpy(buf, _appkey, 16);
+    memcpy(buf, _appkey, 16);
 } 
 
 #ifdef DEBUG
@@ -55,15 +57,15 @@ void printHex2(unsigned v) {
 #endif 
 
 void onEvent (ev_t ev) {
-	#ifdef DEBUG
+    #ifdef DEBUG
     Serial.print(os_getTime());
     Serial.print(": ");
     #endif 
     switch(ev) {
         case EV_SCAN_TIMEOUT:
             #ifdef DEBUG
-        	Serial.println(F("EV_SCAN_TIMEOUT"));
-        	#endif
+            Serial.println(F("EV_SCAN_TIMEOUT"));
+            #endif
             break;
         case EV_BEACON_FOUND:
             #ifdef DEBUG
@@ -117,7 +119,7 @@ void onEvent (ev_t ev) {
             #endif
             // Disable link check validation (automatically enabled
             // during join, but because slow data rates change max TX
-	        // size, we don't use it in this example.
+            // size, we don't use it in this example.
             LMIC_setLinkCheckMode(0);
             break;
         /*
@@ -156,7 +158,7 @@ void onEvent (ev_t ev) {
             // os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
             break;
         case EV_LOST_TSYNC:
-       	    #ifdef DEBUG
+            #ifdef DEBUG
             Serial.println(F("EV_LOST_TSYNC"));
             #endif
             break;
@@ -270,10 +272,16 @@ void DramcoUnoClass::begin(){
 
 void DramcoUnoClass::begin(LoraParam deveui, LoraParam appkey){
     LoraParam appeui = "0000000000000000";
-    begin(deveui, appeui, appkey);
+    begin(OTAA, deveui, appeui, appkey);
 }
 
 void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey){
+    begin(OTAA, deveui, appeui, appkey);
+}
+
+// For OTAA: DEVEUI, APPEUI, APPKEY
+// For ABP: DEVADDR, NWSKEY, APPKEY
+void DramcoUnoClass::begin(ActivationMode_t am, LoraParam loraparam1, LoraParam loraparam2, LoraParam loraparam3){
 
     #ifdef DEBUG
     Serial.begin(DRAMCO_UNO_SERIAL_BAUDRATE);
@@ -282,23 +290,49 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
 
     // copy and convert string (aka char *) to byte array
     char tempStr[3] = {0x00, 0x00, 0x00};
-    // -> deveui
-    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
-    	tempStr[0] = *(deveui+(i*2));
-    	tempStr[1] = *(deveui+(i*2)+1);
-    	*(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
-    }
-    // -> appeui
-    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
-    	tempStr[0] = *(appeui+(i*2));
-    	tempStr[1] = *(appeui+(i*2)+1);
-    	*(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
-    }
-    // -> appkey
-    for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
-    	tempStr[0] = *(appkey+(i*2));
-    	tempStr[1] = *(appkey+(i*2)+1);
-    	*(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+
+    if(am == OTAA){
+        // -> deveui
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
+            tempStr[0] = *(loraparam1+(i*2));
+            tempStr[1] = *(loraparam1+(i*2)+1);
+            *(_deveui+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
+        // -> appeui
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_EUI_SIZE; i++){
+            tempStr[0] = *(loraparam2+(i*2));
+            tempStr[1] = *(loraparam2+(i*2)+1);
+            *(_appeui+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
+        // -> appkey
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+            tempStr[0] = *(loraparam3+(i*2));
+            tempStr[1] = *(loraparam3+(i*2)+1);
+            *(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
+    }else if(am == ABP){
+        // -> devaddr
+        u1_t _devaddr_temp[DRAMCO_UNO_LORA_DEVADDR_SIZE] = {0x00, 0x00, 0x00, 0x00};
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_DEVADDR_SIZE; i++){
+            tempStr[0] = *(loraparam1+(i*2));
+            tempStr[1] = *(loraparam1+(i*2)+1);
+            *(_devaddr_temp+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
+        _devaddr = (u4_t) ( ((uint32_t) _devaddr_temp[0] << 24) | ((uint32_t) _devaddr_temp[1] << 16) | ((uint32_t) _devaddr_temp[2] << 8) | (uint32_t) _devaddr_temp[3] );
+        Serial.println(_devaddr, HEX);
+
+        // -> nwkskey
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+            tempStr[0] = *(loraparam2+(i*2));
+            tempStr[1] = *(loraparam2+(i*2)+1);
+            *(_nwkskey+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
+        // -> appkey
+        for(uint8_t i = 0; i < DRAMCO_UNO_LORA_KEY_SIZE; i++){
+            tempStr[0] = *(loraparam3+(i*2));
+            tempStr[1] = *(loraparam3+(i*2)+1);
+            *(_appkey+i) = (u1_t)strtol(tempStr, NULL, 16);
+        }
     }
     
     pinMode(DRAMCO_UNO_3V3_ENABLE_PIN, OUTPUT);
@@ -312,6 +346,10 @@ void DramcoUnoClass::begin(LoraParam deveui, LoraParam appeui, LoraParam appkey)
     os_init();
     // Reset the MAC state. Session and pending data transfers will be discarded.
     LMIC_reset();
+
+    if(am == ABP)
+        LMIC_setSession (0x1, _devaddr, _nwkskey, _appkey);
+
     LMIC_setClockError(MAX_CLOCK_ERROR * 1 / 100);
     LMIC_setupChannel(0, 868100000, DR_RANGE_MAP(DR_SF12, DR_SF7),  BAND_CENTI);      // g-band
     LMIC_setupChannel(1, 868300000, DR_RANGE_MAP(DR_SF12, DR_SF7B), BAND_CENTI);      // g-band
@@ -473,7 +511,7 @@ float DramcoUnoClass::readTemperature(){
         float value = (float)(analogRead(DRAMCO_UNO_TEMPERATURE_SENSOR_PIN)*3.27); //Calibrated value of 1024/3.3V (AREF tied to 3.3V reg)
         value = (8.194 - sqrt(67.1416+0.01048*(1324-value)))/(-0.00524)+30;
         average += value;
-	delayMicroseconds(500);
+    delayMicroseconds(500);
     }
 
     return average/DRAMCO_UNO_TEMPERATURE_AVERAGE;
