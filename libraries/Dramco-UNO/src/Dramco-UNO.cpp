@@ -16,7 +16,7 @@ static u1_t _appkey[DRAMCO_UNO_LORA_KEY_SIZE];
 static u1_t _nwkskey[DRAMCO_UNO_LORA_KEY_SIZE];
 
 static osjob_t sendjob;
-static osjob_t blinkjob;
+// static osjob_t blinkjob;
 static uint8_t data[DRAMCO_UNO_BUFFER_SIZE];
 static byte _cursor;
 
@@ -33,6 +33,9 @@ static s1_t _outputPower;
 LIS2DW12 _accelerometer;
 
 bool packetReadyForTransmission = false; 
+
+volatile uint8_t wakeReason = DRAMCO_UNO_WAKE_REASON_TIMER;
+volatile uint32_t buttonCounter = 0;
 
 void os_getArtEui (u1_t* buf) { // LMIC expects reverse from TTN
   for(byte i = 8; i>0; i--){
@@ -396,7 +399,10 @@ void DramcoUnoClass::begin(ActivationMode_t am, LoraParam loraparam1, LoraParam 
 // --- General UTILs ---
 void DramcoUnoClass::blink(){
     digitalWrite(DRAMCO_UNO_LED_NAME, HIGH);
-    _sleep(100);
+    unsigned long startMillis = millis();
+    while (millis() - startMillis < 50) {
+        _NOP();
+    }
     digitalWrite(DRAMCO_UNO_LED_NAME, LOW);
 }
 
@@ -424,11 +430,27 @@ void DramcoUnoClass::sendWithOS(){
 }
 
 void DramcoUnoClass::send(){
+    bool buttonHandled = false;
     do_send(&sendjob);
     uint32_t start = millis();
-    while(packetReadyForTransmission && millis() - start < DRAMCO_UNO_SEND_TIMEOUT){ // This makes it blocking
+    while(packetReadyForTransmission && millis() - start < DRAMCO_UNO_SEND_TIMEOUT){ // This makes it blocking, yet with timeout
         wdt_reset();
         os_runloop_once();
+        noInterrupts();
+        if (!buttonHandled && !(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){
+            #if HARDWARE_VERSION < 2
+            delay(DRAMCO_UNO_BUTTON_DEBOUNCE_DELAY);
+            #endif
+            if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){
+                buttonCounter += 1;
+                buttonHandled = true;
+            }
+        }
+        // Button needs to be released before it can be handled again
+        if(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME)){
+            buttonHandled = false;
+        }
+        interrupts();
     }    
     _cursor = 0;
     memset(data, '\0', DRAMCO_UNO_BUFFER_SIZE);
@@ -665,11 +687,11 @@ void DramcoUnoClass::addAcceleration(){
     float y = _accelerometer.readFloatAccelY();
     float z = _accelerometer.readFloatAccelZ();
     #ifdef DEBUG
-    Serial.print("x: ");
+    Serial.print(F("x: "));
     Serial.println(x);
-    Serial.print("y: ");
+    Serial.print(F("y: "));
     Serial.println(y);
-    Serial.print("z: ");
+    Serial.print(F("z: "));
     Serial.println(z);
     #endif
     _lppAddAcceleration(0, x, y, z);
@@ -688,6 +710,9 @@ void DramcoUnoClass::sendAcceleration(){
 }
 
 void DramcoUnoClass::delayUntilShake(){
+    delayUntilShake(-1);
+}
+void DramcoUnoClass::delayUntilShake(uint32_t d){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -697,6 +722,10 @@ void DramcoUnoClass::delayUntilShake(){
 }
 
 void DramcoUnoClass::delayUntilFall(){
+    delayUntilFall(-1);
+}
+
+void DramcoUnoClass::delayUntilFall(uint32_t d){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -706,6 +735,10 @@ void DramcoUnoClass::delayUntilFall(){
 }
 
 void DramcoUnoClass::delayUntilMotion(){
+    delayUntilMotion(-1);
+}
+
+void DramcoUnoClass::delayUntilMotion(uint32_t d){
     _accelerometer.begin();
     _keep3V3Active = true;
     _accelerometerIntEnabled = true;
@@ -718,17 +751,36 @@ void DramcoUnoClass::delayUntilMovement(){
     delayUntilMovement();
 }
 
+void DramcoUnoClass::delayUntilMovement(uint32_t d){
+    delayUntilMovement(d);
+}
 
 void DramcoUnoClass::delayUntilFreeFall(){
     delayUntilFall();
 }
 
+void DramcoUnoClass::delayUntilFreeFall(uint32_t d){
+    delayUntilFall(d);
+}
+
 
 // - Button
 void DramcoUnoClass::delayUntilButtonPress(){
+    delayUntilButtonPress(-1);
+}
+
+void DramcoUnoClass::delayUntilButtonPress(uint32_t d){
     _buttonIntEnabled = true;
     pciInit(DRAMCO_UNO_BUTTON_INT_PIN);
-    sleep(-1);
+    if(d > 0)
+        sleep(d);
+}
+
+void DramcoUnoClass::addButtonCounter(){
+    _lppAddToBuffer(buttonCounter, 0, DRAMCO_UNO_LPP_GENERIC_SENSOR, DRAMCO_UNO_LPP_GENERIC_SENSOR_SIZE, DRAMCO_UNO_LPP_GENERIC_SENSOR_MULT);
+}
+uint32_t DramcoUnoClass::getButtonCounter(){
+    return buttonCounter;
 }
 
 // - Soil Moisture
@@ -785,8 +837,20 @@ void DramcoUnoClass::sendSoil(){
     sendSoilMoisture();
 }
 
+// --- General ----
+void DramcoUnoClass::addAnalogValue(float value){
+    _lppAddToBuffer(value, 0, DRAMCO_UNO_LPP_ANALOG_INPUT, DRAMCO_UNO_LPP_ANALOG_INPUT_SIZE, DRAMCO_UNO_LPP_ANALOG_INPUT_MULT);
+}
+
+void DramcoUnoClass::addAnalogValue(uint32_t value){
+    _lppAddToBuffer(value, 0, DRAMCO_UNO_LPP_GENERIC_SENSOR, DRAMCO_UNO_LPP_GENERIC_SENSOR_SIZE, DRAMCO_UNO_LPP_GENERIC_SENSOR_MULT);
+}
 
 // --- Sleep ---
+uint8_t DramcoUnoClass::getWakeReason(){
+    return wakeReason;
+}
+
 void DramcoUnoClass::sleep(uint32_t d){
     #ifdef DEBUG
     Serial.flush();
@@ -803,7 +867,9 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
         digitalWrite(DRAMCO_UNO_TEMPERATURE_SENSOR_ENABLE_PIN, LOW);
     }
     
-    
+    // Reset wake reason
+    wakeReason = DRAMCO_UNO_WAKE_REASON_TIMER;
+
     pinMode(1, OUTPUT);
     digitalWrite(1, LOW);
 
@@ -865,10 +931,7 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
     _wdtEnableReset();
-    #ifdef ENABLE_WDT
     wdt_enable(WDTO_4S);
-    #endif
-
 }
 
 unsigned long DramcoUnoClass::_wdtEnableForSleep(const unsigned long maxWaitTimeMillis) {
@@ -928,23 +991,26 @@ ISR (WDT_vect) {
 ISR (PCINT0_vect){ // handle pin change interrupt for D8 to D13 here  
     if(_accelerometerIntEnabled){
         if (!(DRAMCO_UNO_ACCELEROMTER_INT_PORT & _BV(DRAMCO_UNO_ACCELEROMTER_INT_NAME))){ // If pin 9 is low
-            DramcoUnoClass::blink();
             pciDeinit();
             _millisInDeepSleep = -1; // Stop WDT sleep
             _keep3V3Active = false; // Accelerometer can shut up now
             _accelerometerIntEnabled = false;
+            wakeReason = DRAMCO_UNO_WAKE_REASON_ACCELEROMETER;
         }
     }
     /* Button interrupt handling DRAMCO UNO v1 */
     #if HARDWARE_VERSION < 2
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 4 is low
-            delay(50);
+            delay(DRAMCO_UNO_BUTTON_DEBOUNCE_DELAY);
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
-                DramcoUnoClass::blink();
+                #ifndef DISABLE_ISR_DEINIT_FOR_BUTTON
                 pciDeinit();
+                #endif
                 _millisInDeepSleep = -1; // Stop WDT sleep
                 _buttonIntEnabled = false;
+                wakeReason = DRAMCO_UNO_WAKE_REASON_BUTTON;
+                buttonCounter += 1;
             }
         }
     }
@@ -957,14 +1023,17 @@ ISR (PCINT2_vect){ // handle pin change interrupt for D0 to D7 here
     #if HARDWARE_VERSION >= 2
     if(_buttonIntEnabled){
         if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // If pin 4 is low
-            #if HARDWARE_VERSION <= 2
-            delay(50);
+            #if HARDWARE_VERSION < 2
+            delay(DRAMCO_UNO_BUTTON_DEBOUNCE_DELAY);
             #endif
             if (!(DRAMCO_UNO_BUTTON_INT_PORT & _BV(DRAMCO_UNO_BUTTON_INT_NAME))){ // Debounce
-                DramcoUnoClass::blink();
+                #ifndef DISABLE_ISR_DEINIT_FOR_BUTTON
                 pciDeinit();
+                #endif
                 _millisInDeepSleep = -1; // Stop WDT sleep
                 _buttonIntEnabled = false;
+                wakeReason = DRAMCO_UNO_WAKE_REASON_BUTTON;
+                buttonCounter += 1;
             }
         }
     }

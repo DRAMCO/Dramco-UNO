@@ -19,7 +19,7 @@
 	#define HARDWARE_VERSION 2 // Default version 2
 #endif
 
-#define DEBUG
+//#define DEBUG
 
 #if HARDWARE_VERSION >= 2
 #define DRAMCO_UNO_LED_NAME 					  10
@@ -77,6 +77,7 @@
 #define DRAMCO_UNO_BUTTON_INT_NAME 				   PINB2
 #define DRAMCO_UNO_BUTTON_INT_PORT 				   PINB
 #endif
+#define DRAMCO_UNO_BUTTON_DEBOUNCE_DELAY					50
 
 #if HARDWARE_VERSION >=2
 #define DRAMCO_UNO_SOIL_PIN_EN 					   DRAMCO_UNO_LED_NAME
@@ -119,7 +120,11 @@
 #define DRAMCO_UNO_INT_ACTION_WAKE		   	       1
 #define DRAMCO_UNO_INT_ACTION_SEND_ACC		       2
 
-// #define DEBUG
+// Wake reasons
+#define DRAMCO_UNO_WAKE_REASON_TIMER			   0
+#define DRAMCO_UNO_WAKE_REASON_ACCELEROMETER   	   1
+#define DRAMCO_UNO_WAKE_REASON_BUTTON			   2
+
 
 
 typedef const char * LoraParam;
@@ -178,13 +183,21 @@ class DramcoUnoClass {
 		void sendAcceleration();
 
 		void delayUntilShake();
+		void delayUntilShake(uint32_t d);
 		void delayUntilFall();
+		void delayUntilFall(uint32_t d);
 		void delayUntilFreeFall();
+		void delayUntilFreeFall(uint32_t d);
 		void delayUntilMotion();
+		void delayUntilMotion(uint32_t d);
 		void delayUntilMovement();
+		void delayUntilMovement(uint32_t d);
 
 		// - Button
 		void delayUntilButtonPress();
+		void delayUntilButtonPress(uint32_t d);
+		uint32_t getButtonCounter();
+		void addButtonCounter();
 
 		// - Soil moisture
 		float readSoilMoisture();
@@ -196,12 +209,18 @@ class DramcoUnoClass {
 		void sendSoilMoisture();
 		void sendSoil();
 
+		// - General
+		void addAnalogValue(float value);
+		void addAnalogValue(uint32_t value);
+
 		// --- Sleep ---
+		uint8_t getWakeReason();
 		void sleep(uint32_t d);
 		static void _isrWdt(); 
 		static void _sleep(unsigned long maxWaitTimeMillis);
 		static unsigned long _wdtEnableForSleep(const unsigned long maxWaitTimeMillis);	
 		static void _wdtEnableInterrupt();
+		static void _wdtEnableReset();
 	private:
 		static void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 		static void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
