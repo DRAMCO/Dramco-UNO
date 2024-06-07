@@ -53,6 +53,8 @@
 #define DRAMCO_UNO_BUFFER_SIZE 					   20 // Should be enough for temp, lumin, accelerometer and soil moisture
 #define DRAMCO_UNO_SERIAL_BAUDRATE			       9600
 
+#define DRAMCO_UNO_SEND_TIMEOUT					   30*1000
+
 // Sensor constants
 #define DRAMCO_UNO_VOLTAGE_REF_PIN 			   	   A3
 

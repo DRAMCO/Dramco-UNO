@@ -402,6 +402,7 @@ void DramcoUnoClass::blink(){
 
 void DramcoUnoClass::loop(){
     os_runloop_once();
+    wdt_reset();
 }
 
 void DramcoUnoClass::delay(uint32_t d){
@@ -424,7 +425,9 @@ void DramcoUnoClass::sendWithOS(){
 
 void DramcoUnoClass::send(){
     do_send(&sendjob);
-    while(packetReadyForTransmission){ // This makes it blocking
+    uint32_t start = millis();
+    while(packetReadyForTransmission && millis() - start < DRAMCO_UNO_SEND_TIMEOUT){ // This makes it blocking
+        wdt_reset();
         os_runloop_once();
     }    
     _cursor = 0;
@@ -861,7 +864,10 @@ void DramcoUnoClass::_sleep(unsigned long maxWaitTimeMillis) {
     digitalWrite(DRAMCO_UNO_ACCELEROMTER_INT_PIN, HIGH);
     digitalWrite(DRAMCO_UNO_3V3_ENABLE_PIN, HIGH);
 
-    
+    _wdtEnableReset();
+    #ifdef ENABLE_WDT
+    wdt_enable(WDTO_4S);
+    #endif
 
 }
 
@@ -909,6 +915,10 @@ void DramcoUnoClass::_isrWdt() {
 
 void DramcoUnoClass::_wdtEnableInterrupt() { 
     WDTCSR |= (1 << WDCE) | (1 << WDIE);
+}
+
+void DramcoUnoClass::_wdtEnableReset() { 
+    WDTCSR = 0;
 }
 
 ISR (WDT_vect) {
