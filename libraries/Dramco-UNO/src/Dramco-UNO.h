@@ -205,7 +205,7 @@ class DramcoUnoClass {
 	private:
 		static void _lppAddToBuffer(float val, uint8_t channel, uint8_t type, uint8_t size, uint16_t mult);
 		static void _lppAddAcceleration(uint8_t channel, float x, float y, float z);
-
+		static void _wdtEnableReset();
 };
 
 void error(uint8_t errorcode);
